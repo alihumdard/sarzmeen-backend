@@ -27,6 +27,8 @@ class Project extends Model
         'description',
         'verified',
         'featured',
+        'meta_title',
+        'meta_description',
     ];
 
     protected function casts(): array

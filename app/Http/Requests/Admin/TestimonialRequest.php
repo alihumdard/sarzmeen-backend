@@ -21,6 +21,7 @@ class TestimonialRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:60'],
             'avatar' => ['nullable', 'string', 'max:500'],
+            'avatarFile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'purchase' => ['required', 'string', 'max:255'],
             'quote' => ['required', 'string', 'max:2000'],

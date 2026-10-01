@@ -48,6 +48,8 @@ class StorePropertyRequest extends FormRequest
             'nearbyPlaces.*.kind' => ['required', 'in:park,road,airport,mall'],
             'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'metaTitle' => ['nullable', 'string', 'max:70'],
+            'metaDescription' => ['nullable', 'string', 'max:160'],
         ];
     }
 }

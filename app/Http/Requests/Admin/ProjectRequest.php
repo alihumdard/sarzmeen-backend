@@ -43,6 +43,8 @@ class ProjectRequest extends FormRequest
             'paymentPlan.*.value' => ['required', 'string', 'max:100'],
             'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'metaTitle' => ['nullable', 'string', 'max:70'],
+            'metaDescription' => ['nullable', 'string', 'max:160'],
         ];
     }
 }

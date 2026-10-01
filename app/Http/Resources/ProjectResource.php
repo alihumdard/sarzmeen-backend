@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +12,8 @@ class ProjectResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $imageService = app(ImageService::class);
+
         $cover = $this->relationLoaded('images')
             ? $this->images->firstWhere('is_cover', true)?->path ?? $this->images->first()?->path
             : null;
@@ -30,7 +33,7 @@ class ProjectResource extends JsonResource
             'name' => $this->name,
             'city' => $cityName,
             'category' => $this->whenLoaded('category', fn () => $this->category->name, ''),
-            'image' => $cover ?? '',
+            'image' => $imageService->url($cover ?? ''),
             'status' => $this->status,
             'developer' => $this->developer,
             'priceFrom' => $this->price_from,

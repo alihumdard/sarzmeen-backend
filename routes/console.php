@@ -1,8 +1,11 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+declare(strict_types=1);
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('subscriptions:expire')->dailyAt('01:00');
+Schedule::command('properties:expire')->dailyAt('02:00');
+Schedule::command('data:prune')->weeklyOn(1, '03:00');
+Schedule::command('cache:warm')->hourly();
+Schedule::command('queue:prune-batches --hours=48')->daily();

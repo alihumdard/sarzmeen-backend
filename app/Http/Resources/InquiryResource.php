@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,6 +12,8 @@ class InquiryResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $imageService = app(ImageService::class);
+
         return [
             'id' => (string) $this->id,
             'name' => $this->name,
@@ -24,9 +27,11 @@ class InquiryResource extends JsonResource
             'location' => $this->whenLoaded('property', fn () => $this->property?->full_location),
             'project' => $this->whenLoaded('project', fn () => $this->project?->name),
             'image' => $this->whenLoaded('property', fn () =>
-                $this->property?->images?->firstWhere('is_cover', true)?->path
-                ?? $this->property?->images?->first()?->path
-                ?? ''
+                $imageService->url(
+                    $this->property?->images?->firstWhere('is_cover', true)?->path
+                    ?? $this->property?->images?->first()?->path
+                    ?? ''
+                )
             ),
             'date' => $this->created_at->format('M d, Y h:i A'),
             'createdAt' => $this->created_at->toIso8601String(),

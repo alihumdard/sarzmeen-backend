@@ -53,6 +53,8 @@ class Property extends Model
         'views',
         'published_at',
         'expires_at',
+        'meta_title',
+        'meta_description',
     ];
 
     protected function casts(): array

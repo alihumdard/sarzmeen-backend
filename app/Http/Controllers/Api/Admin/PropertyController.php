@@ -8,6 +8,7 @@ use App\Enums\PropertyStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PropertyResource;
 use App\Models\Property;
+use App\Notifications\PropertyStatusChangedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,6 +40,7 @@ class PropertyController extends Controller
             'status' => ['required', 'in:published,rejected,expired,sold'],
         ]);
 
+        $oldStatus = $property->status->value;
         $newStatus = PropertyStatus::from($validated['status']);
 
         $property->status = $newStatus;
@@ -48,6 +50,10 @@ class PropertyController extends Controller
         }
 
         $property->save();
+
+        if ($property->owner) {
+            $property->owner->notify(new PropertyStatusChangedNotification($property, $oldStatus));
+        }
 
         return response()->json([
             'data' => [

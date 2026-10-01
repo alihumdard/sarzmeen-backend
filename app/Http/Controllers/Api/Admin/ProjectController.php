@@ -9,14 +9,17 @@ use App\Http\Requests\Admin\ProjectRequest;
 use App\Http\Resources\ProjectDetailResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 
 class ProjectController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Project::with(['images', 'category', 'location.parent'])
@@ -58,6 +61,8 @@ class ProjectController extends Controller
                 'description' => $data['description'] ?? '',
                 'verified' => $data['verified'] ?? false,
                 'featured' => $data['featured'] ?? false,
+                'meta_title' => $data['metaTitle'] ?? null,
+                'meta_description' => $data['metaDescription'] ?? null,
             ]);
 
             $this->syncRelations($project, $data);
@@ -91,6 +96,8 @@ class ProjectController extends Controller
                 'description' => $data['description'] ?? '',
                 'verified' => $data['verified'] ?? false,
                 'featured' => $data['featured'] ?? false,
+                'meta_title' => $data['metaTitle'] ?? null,
+                'meta_description' => $data['metaDescription'] ?? null,
             ]);
 
             $this->syncRelations($project, $data);
@@ -104,7 +111,7 @@ class ProjectController extends Controller
     public function destroy(Project $project): JsonResponse
     {
         foreach ($project->images as $image) {
-            Storage::disk('public')->delete($image->path);
+            $this->imageService->delete($image->path);
         }
 
         $project->delete();
@@ -156,11 +163,12 @@ class ProjectController extends Controller
 
         if (! empty($data['images'])) {
             $maxSort = $project->images()->max('sort_order') ?? -1;
+            $isFirst = $project->images()->count() === 0;
             foreach ($data['images'] as $index => $image) {
-                $path = $image->store("projects/{$project->id}", 'public');
+                $path = $this->imageService->upload($image, "projects/{$project->id}");
                 $project->images()->create([
                     'path' => $path,
-                    'is_cover' => $project->images()->count() === 0 && $index === 0,
+                    'is_cover' => $isFirst && $index === 0,
                     'sort_order' => $maxSort + $index + 1,
                 ]);
             }

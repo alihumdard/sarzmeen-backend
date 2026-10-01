@@ -23,6 +23,8 @@ class Blog extends Model
         'blog_category_id',
         'author_id',
         'published_at',
+        'meta_title',
+        'meta_description',
     ];
 
     protected function casts(): array

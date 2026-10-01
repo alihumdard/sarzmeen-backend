@@ -49,6 +49,8 @@ class UpdatePropertyRequest extends FormRequest
             'images' => ['nullable', 'array', 'max:20'],
             'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'status' => ['sometimes', 'in:draft,pending'],
+            'metaTitle' => ['nullable', 'string', 'max:70'],
+            'metaDescription' => ['nullable', 'string', 'max:160'],
         ];
     }
 }

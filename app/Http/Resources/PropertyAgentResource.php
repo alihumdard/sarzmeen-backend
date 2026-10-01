@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,7 @@ class PropertyAgentResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $imageService = app(ImageService::class);
         $owner = $this->resource;
 
         if ($owner instanceof User) {
@@ -26,7 +28,7 @@ class PropertyAgentResource extends JsonResource
                 'slug' => '',
                 'name' => $owner->name,
                 'title' => 'Owner',
-                'avatar' => $owner->avatar ?? '',
+                'avatar' => $imageService->url($owner->avatar ?? ''),
                 'phone' => $owner->phone,
             ];
         }
@@ -47,7 +49,7 @@ class PropertyAgentResource extends JsonResource
             'slug' => $agent->slug,
             'name' => $user->name,
             'title' => $agent->title ?? 'Agent',
-            'avatar' => $user->avatar ?? '',
+            'avatar' => $imageService->url($user->avatar ?? ''),
             'phone' => $user->phone,
             'whatsapp' => $user->phone,
             'verified' => $this->when($agent->verified, true),

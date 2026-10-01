@@ -8,12 +8,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\TestimonialRequest;
 use App\Http\Resources\TestimonialResource;
 use App\Models\Testimonial;
+use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Cache;
 
 class TestimonialController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
     public function index(): AnonymousResourceCollection
     {
         $testimonials = Testimonial::orderByDesc('featured')
@@ -25,7 +29,17 @@ class TestimonialController extends Controller
 
     public function store(TestimonialRequest $request): JsonResponse
     {
-        $testimonial = Testimonial::create($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('avatarFile')) {
+            $data['avatar'] = $this->imageService->upload(
+                $request->file('avatarFile'),
+                'testimonials',
+                300,
+            );
+        }
+
+        $testimonial = Testimonial::create($data);
 
         $this->clearCache();
 
@@ -36,7 +50,20 @@ class TestimonialController extends Controller
 
     public function update(TestimonialRequest $request, Testimonial $testimonial): TestimonialResource
     {
-        $testimonial->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('avatarFile')) {
+            if ($testimonial->avatar) {
+                $this->imageService->delete($testimonial->avatar);
+            }
+            $data['avatar'] = $this->imageService->upload(
+                $request->file('avatarFile'),
+                'testimonials',
+                300,
+            );
+        }
+
+        $testimonial->update($data);
 
         $this->clearCache();
 
@@ -45,6 +72,10 @@ class TestimonialController extends Controller
 
     public function destroy(Testimonial $testimonial): JsonResponse
     {
+        if ($testimonial->avatar) {
+            $this->imageService->delete($testimonial->avatar);
+        }
+
         $testimonial->delete();
 
         $this->clearCache();

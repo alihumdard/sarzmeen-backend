@@ -8,12 +8,16 @@ use App\Enums\ListedBy;
 use App\Enums\PropertyStatus;
 use App\Models\Property;
 use App\Models\User;
+use App\Services\ImageService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class CreateProperty
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
     public function execute(User $user, array $data): Property
     {
         return DB::transaction(function () use ($user, $data) {
@@ -48,6 +52,8 @@ class CreateProperty
                 'property_condition' => $data['propertyCondition'] ?? null,
                 'listed_by' => $this->resolveListedBy($user),
                 'status' => PropertyStatus::Draft,
+                'meta_title' => $data['metaTitle'] ?? null,
+                'meta_description' => $data['metaDescription'] ?? null,
             ]);
 
             if (! empty($data['features'])) {
@@ -88,7 +94,7 @@ class CreateProperty
     private function storeImages(Property $property, array $images): void
     {
         foreach ($images as $index => $image) {
-            $path = $image->store("properties/{$property->id}", 'public');
+            $path = $this->imageService->upload($image, "properties/{$property->id}");
 
             $property->images()->create([
                 'path' => $path,

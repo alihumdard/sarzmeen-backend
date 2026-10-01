@@ -8,6 +8,7 @@ use App\Actions\Auth\RegisterUser;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,8 @@ class RegisterController extends Controller
         $user = $action->execute($request->toDTO());
 
         event(new Registered($user));
+
+        $user->notify(new WelcomeNotification());
 
         Auth::login($user);
 

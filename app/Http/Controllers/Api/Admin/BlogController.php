@@ -12,6 +12,7 @@ use App\Http\Resources\BlogDetailResource;
 use App\Models\Blog;
 use App\Models\BlogCategory;
 use App\Models\BlogTag;
+use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -19,6 +20,10 @@ use Illuminate\Support\Facades\Cache;
 
 class BlogController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Blog::with(['category', 'author'])
@@ -48,6 +53,14 @@ class BlogController extends Controller
         $data = $this->mapInput($request->validated());
         $data['author_id'] = $request->user()->id;
 
+        if ($request->hasFile('imageFile')) {
+            $data['image'] = $this->imageService->upload(
+                $request->file('imageFile'),
+                'blogs',
+                1200,
+            );
+        }
+
         if ($data['status'] === BlogStatus::Published->value && ! isset($data['published_at'])) {
             $data['published_at'] = now();
         }
@@ -71,6 +84,17 @@ class BlogController extends Controller
     {
         $data = $this->mapInput($request->validated());
 
+        if ($request->hasFile('imageFile')) {
+            if ($blog->image) {
+                $this->imageService->delete($blog->image);
+            }
+            $data['image'] = $this->imageService->upload(
+                $request->file('imageFile'),
+                'blogs',
+                1200,
+            );
+        }
+
         if (
             $data['status'] === BlogStatus::Published->value
             && ! $blog->published_at
@@ -93,6 +117,10 @@ class BlogController extends Controller
 
     public function destroy(Blog $blog): JsonResponse
     {
+        if ($blog->image) {
+            $this->imageService->delete($blog->image);
+        }
+
         $blog->delete();
 
         Cache::forget('public_blogs');
@@ -110,6 +138,16 @@ class BlogController extends Controller
         if (isset($data['readTime'])) {
             $data['read_time'] = $data['readTime'];
             unset($data['readTime']);
+        }
+
+        if (isset($data['metaTitle'])) {
+            $data['meta_title'] = $data['metaTitle'];
+            unset($data['metaTitle']);
+        }
+
+        if (isset($data['metaDescription'])) {
+            $data['meta_description'] = $data['metaDescription'];
+            unset($data['metaDescription']);
         }
 
         if (isset($data['tags'])) {

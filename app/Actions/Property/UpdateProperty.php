@@ -32,6 +32,8 @@ class UpdateProperty
                 'furnishing' => 'furnishing',
                 'propertyCondition' => 'property_condition',
                 'status' => 'status',
+                'metaTitle' => 'meta_title',
+                'metaDescription' => 'meta_description',
             ];
 
             $updates = [];

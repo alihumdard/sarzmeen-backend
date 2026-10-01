@@ -29,6 +29,14 @@ class ProjectController extends Controller
             });
         }
 
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $query->whereRaw(
+                "to_tsvector('english', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(full_location, '')) @@ plainto_tsquery('english', ?)",
+                [$search],
+            );
+        }
+
         if ($request->boolean('featured')) {
             $query->featured();
         }

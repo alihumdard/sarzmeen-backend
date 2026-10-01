@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\PropertyDetailResource;
 use App\Http\Resources\PropertyResource;
 use App\Models\Property;
+use App\Models\PropertyViewLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -50,6 +51,26 @@ class PropertyController extends Controller
             $query->where('beds', '>=', (int) $request->input('beds'));
         }
 
+        if ($request->filled('search')) {
+            $search = $request->string('search')->toString();
+            $query->whereRaw(
+                "to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(full_location, '')) @@ plainto_tsquery('english', ?)",
+                [$search],
+            );
+        }
+
+        if ($request->filled('area_min')) {
+            $query->where('area_value', '>=', (float) $request->input('area_min'));
+        }
+
+        if ($request->filled('area_max')) {
+            $query->where('area_value', '<=', (float) $request->input('area_max'));
+        }
+
+        if ($request->filled('baths')) {
+            $query->where('baths', '>=', (int) $request->input('baths'));
+        }
+
         if ($request->boolean('featured')) {
             $query->featured();
         }
@@ -84,6 +105,12 @@ class PropertyController extends Controller
             ->firstOrFail();
 
         $property->increment('views');
+
+        PropertyViewLog::upsert(
+            [['property_id' => $property->id, 'date' => now()->toDateString(), 'count' => 1]],
+            ['property_id', 'date'],
+            ['count' => \Illuminate\Support\Facades\DB::raw('property_view_logs.count + 1')],
+        );
 
         return new PropertyDetailResource($property);
     }

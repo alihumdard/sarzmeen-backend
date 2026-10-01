@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -11,12 +12,18 @@ class ProjectDetailResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $images = $this->relationLoaded('images')
+        $imageService = app(ImageService::class);
+
+        $rawImages = $this->relationLoaded('images')
             ? $this->images->pluck('path')->all()
             : [];
 
+        $images = array_map(fn (string $p) => $imageService->url($p), $rawImages);
+
         $cover = $this->relationLoaded('images')
-            ? $this->images->firstWhere('is_cover', true)?->path ?? ($images[0] ?? '')
+            ? $imageService->url(
+                $this->images->firstWhere('is_cover', true)?->path ?? ($rawImages[0] ?? '')
+            )
             : '';
 
         $cityName = '';
@@ -57,6 +64,8 @@ class ProjectDetailResource extends JsonResource
             'totalArea' => $this->total_area,
             'plotSizes' => $this->whenLoaded('plotSizes', fn () => $this->plotSizes->pluck('size')->all()),
             'nearbyPlaces' => [],
+            'metaTitle' => $this->meta_title ?? $this->name,
+            'metaDescription' => $this->meta_description ?? mb_substr(strip_tags($this->description), 0, 160),
         ];
     }
 }

@@ -12,13 +12,16 @@ use App\Http\Requests\Property\UpdatePropertyRequest;
 use App\Http\Resources\PropertyResource;
 use App\Models\Property;
 use App\Models\User;
+use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\Storage;
 
 class PropertyController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
     public function index(Request $request): AnonymousResourceCollection
     {
         $user = $request->user();
@@ -55,7 +58,7 @@ class PropertyController extends Controller
         $this->authorize('delete', $property);
 
         foreach ($property->images as $image) {
-            Storage::disk('public')->delete($image->path);
+            $this->imageService->delete($image->path);
         }
 
         $property->delete();
