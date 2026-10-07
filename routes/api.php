@@ -29,8 +29,11 @@ use App\Http\Controllers\Api\My\StatsController as MyStatsController;
 use App\Http\Controllers\Api\My\SubscriptionController;
 use App\Http\Controllers\Api\ComparisonController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\PublicAgentController;
+use App\Http\Controllers\Api\PublicAgencyController;
 use App\Http\Controllers\Api\SubscriptionPlanController as PublicSubscriptionPlanController;
 use App\Http\Controllers\Api\PropertyController;
+use App\Http\Controllers\Api\PropertySchemaController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\InquiryController;
@@ -45,11 +48,13 @@ use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Api\Admin\InquiryController as AdminInquiryController;
 use App\Http\Controllers\Api\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
+use App\Http\Controllers\Api\Admin\SiteSettingController;
 use Illuminate\Support\Facades\Route;
 
 // Public taxonomy routes (read-only, cached)
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/property-types', [PropertyTypeController::class, 'index']);
+Route::get('/property-schema', PropertySchemaController::class);
 Route::get('/project-categories', [ProjectCategoryController::class, 'index']);
 Route::get('/locations', [LocationController::class, 'index']);
 
@@ -68,9 +73,18 @@ Route::get('/blogs/{slug}', [BlogController::class, 'show']);
 Route::get('/blog-categories', [BlogController::class, 'categories']);
 Route::get('/blog-tags', [BlogController::class, 'tags']);
 
+// Public agents & agencies
+Route::get('/agents', [PublicAgentController::class, 'index']);
+Route::get('/agents/{slug}', [PublicAgentController::class, 'show']);
+Route::get('/agencies', [PublicAgencyController::class, 'index']);
+Route::get('/agencies/{slug}', [PublicAgencyController::class, 'show']);
+
 // Public content routes
 Route::get('/testimonials', [TestimonialController::class, 'index']);
 Route::get('/faqs', [FaqController::class, 'index']);
+
+// Public site settings (homepage config)
+Route::get('/site-settings/{group}', [SiteSettingController::class, 'index']);
 
 // Subscription plans (public pricing page)
 Route::get('/plans', PublicSubscriptionPlanController::class);
@@ -134,6 +148,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
         Route::post('/conversations/{conversation}/messages', [ConversationController::class, 'sendMessage']);
         Route::get('/properties', [MyPropertyController::class, 'index']);
+        Route::get('/properties/{property}', [MyPropertyController::class, 'show']);
         Route::post('/properties', [MyPropertyController::class, 'store']);
         Route::put('/properties/{property}', [MyPropertyController::class, 'update']);
         Route::delete('/properties/{property}', [MyPropertyController::class, 'destroy']);
@@ -222,5 +237,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/payments', [AdminPaymentController::class, 'index']);
         Route::get('/payments/{payment}', [AdminPaymentController::class, 'show']);
         Route::patch('/payments/{payment}/status', [AdminPaymentController::class, 'updateStatus']);
+
+        // Site settings
+        Route::get('/settings/{group}', [SiteSettingController::class, 'index']);
+        Route::get('/settings/{group}/{key}', [SiteSettingController::class, 'show']);
+        Route::put('/settings/{group}', [SiteSettingController::class, 'update']);
+        Route::put('/settings/{group}/{key}', [SiteSettingController::class, 'updateKey']);
     });
 });

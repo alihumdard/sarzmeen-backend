@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             PropertySeeder::class,
             ProjectSeeder::class,
             ContentSeeder::class,
+            HomepageSeeder::class,
         ]);
     }
 }
