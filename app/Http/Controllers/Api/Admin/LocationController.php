@@ -73,6 +73,33 @@ class LocationController extends Controller
 
     public function destroy(Location $location): JsonResponse
     {
+        /*
+         * Properties and projects hold a FK to locations, so deleting a
+         * referenced row would raise a raw constraint violation. Report what
+         * is blocking instead, so the admin knows what to reassign first.
+         */
+        $blockers = [];
+
+        if ($children = $location->children()->count()) {
+            $blockers[] = $children.' sub-location'.($children > 1 ? 's' : '');
+        }
+
+        if ($properties = $location->properties()->count()) {
+            $blockers[] = $properties.' propert'.($properties > 1 ? 'ies' : 'y');
+        }
+
+        if ($projects = $location->projects()->count()) {
+            $blockers[] = $projects.' project'.($projects > 1 ? 's' : '');
+        }
+
+        if ($blockers !== []) {
+            return response()->json([
+                'message' => "\"{$location->name}\" is still used by ".
+                    implode(' and ', $blockers).
+                    '. Reassign or remove those first.',
+            ], 409);
+        }
+
         $location->delete();
         Cache::forget('taxonomy_locations');
 

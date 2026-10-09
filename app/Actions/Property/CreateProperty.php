@@ -54,6 +54,7 @@ class CreateProperty
                 'status' => PropertyStatus::Draft,
                 'meta_title' => $data['metaTitle'] ?? null,
                 'meta_description' => $data['metaDescription'] ?? null,
+                'specs' => $data['specs'] ?? [],
             ]);
 
             if (! empty($data['features'])) {

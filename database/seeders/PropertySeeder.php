@@ -44,7 +44,7 @@ class PropertySeeder extends Seeder
             [
                 'title' => '3 Bed Flat for Rent in Gulberg',
                 'description' => "Well-maintained 3 bedroom apartment.\nClose to MM Alam Road restaurants.\nLift and generator available.",
-                'type' => 'flat', 'location' => 'gulberg-lahore', 'full_location' => 'Gulberg III, Lahore',
+                'type' => 'flat-apartment', 'location' => 'gulberg-lahore', 'full_location' => 'Gulberg III, Lahore',
                 'purpose' => 'rent', 'price' => 120000, 'area_value' => 1800, 'area_unit' => 'sqft',
                 'beds' => 3, 'baths' => 3, 'living_rooms' => 1, 'kitchens' => 1, 'car_parking' => 1, 'floors' => 1,
                 'furnishing' => 'unfurnished', 'condition' => 'ready', 'featured' => false, 'verified' => true,

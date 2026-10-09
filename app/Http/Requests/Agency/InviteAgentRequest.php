@@ -21,6 +21,8 @@ class InviteAgentRequest extends FormRequest
             'password' => ['required', 'string', 'min:8'],
             'phone' => ['nullable', 'string', 'max:20'],
             'title' => ['nullable', 'string', 'max:100'],
+            'bio' => ['nullable', 'string', 'max:2000'],
+            'office_address' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

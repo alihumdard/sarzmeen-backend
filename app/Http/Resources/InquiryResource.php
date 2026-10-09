@@ -21,7 +21,7 @@ class InquiryResource extends JsonResource
             'phone' => $this->phone ?? '',
             'message' => $this->message,
             'source' => $this->source,
-            'status' => $this->status->value,
+            'status' => $this->status?->value ?? 'new',
             'property' => $this->whenLoaded('property', fn () => $this->property?->title),
             'propertyType' => $this->whenLoaded('property', fn () => $this->property?->propertyType?->name),
             'location' => $this->whenLoaded('property', fn () => $this->property?->full_location),

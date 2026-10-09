@@ -6,7 +6,18 @@ namespace App\Enums;
 
 enum ConditionStatus: string
 {
-    case Ready = 'ready';
+    case BrandNew = 'brand_new';
+    case LikeNew = 'like_new';
+    case Used = 'used';
     case UnderConstruction = 'under_construction';
-    case AvailableNow = 'available_now';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::BrandNew => 'Brand New',
+            self::LikeNew => 'Like New',
+            self::Used => 'Used',
+            self::UnderConstruction => 'Under Construction',
+        };
+    }
 }

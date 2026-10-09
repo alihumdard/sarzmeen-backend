@@ -10,6 +10,7 @@ use App\Models\PropertyImage;
 use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class PropertyImageController extends Controller
 {
@@ -19,7 +20,7 @@ class PropertyImageController extends Controller
 
     public function store(Request $request, Property $property): JsonResponse
     {
-        $this->authorize('update', $property);
+        Gate::authorize('update', $property);
 
         $request->validate([
             'images' => 'required|array|max:20',
@@ -52,7 +53,7 @@ class PropertyImageController extends Controller
 
     public function setCover(Property $property, PropertyImage $image): JsonResponse
     {
-        $this->authorize('update', $property);
+        Gate::authorize('update', $property);
 
         if ($image->property_id !== $property->id) {
             abort(404);
@@ -66,7 +67,7 @@ class PropertyImageController extends Controller
 
     public function reorder(Request $request, Property $property): JsonResponse
     {
-        $this->authorize('update', $property);
+        Gate::authorize('update', $property);
 
         $request->validate([
             'order' => 'required|array',
@@ -84,7 +85,7 @@ class PropertyImageController extends Controller
 
     public function destroy(Property $property, PropertyImage $image): JsonResponse
     {
-        $this->authorize('update', $property);
+        Gate::authorize('update', $property);
 
         if ($image->property_id !== $property->id) {
             abort(404);

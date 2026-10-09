@@ -25,16 +25,23 @@ class InquiryReceivedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $property = $this->inquiry->property;
+        $listing = $this->inquiry->property?->title
+            ?? $this->inquiry->project?->name;
+
+        $subject = $listing
+            ? "New Inquiry: {$listing}"
+            : "New Inquiry from {$this->inquiry->name}";
 
         return (new MailMessage)
-            ->subject('New Inquiry Received')
-            ->greeting("Hello {$notifiable->name},")
-            ->line("You have received a new inquiry from **{$this->inquiry->name}**.")
-            ->when($property, fn (MailMessage $m) => $m->line("Property: **{$property->title}**"))
-            ->line("Message: {$this->inquiry->message}")
-            ->action('View Inquiry', url('/admin/inquiries'))
-            ->line('Please respond promptly to maintain a great customer experience.');
+            ->subject($subject)
+            // Lets the agent hit reply and reach the lead directly.
+            ->replyTo($this->inquiry->email, $this->inquiry->name)
+            ->markdown('mail.inquiry.received', [
+                'inquiry' => $this->inquiry,
+                'notifiable' => $notifiable,
+                'listing' => $listing,
+                'actionUrl' => rtrim((string) config('app.frontend_url'), '/').'/admin/inquiries',
+            ]);
     }
 
     public function toArray(object $notifiable): array
@@ -46,6 +53,7 @@ class InquiryReceivedNotification extends Notification implements ShouldQueue
             'email' => $this->inquiry->email,
             'message' => str($this->inquiry->message)->limit(100)->toString(),
             'property' => $this->inquiry->property?->title,
+            'project' => $this->inquiry->project?->name,
         ];
     }
 }

@@ -55,6 +55,7 @@ class Property extends Model
         'expires_at',
         'meta_title',
         'meta_description',
+        'specs',
     ];
 
     protected function casts(): array
@@ -74,6 +75,7 @@ class Property extends Model
             'views' => 'integer',
             'published_at' => 'datetime',
             'expires_at' => 'datetime',
+            'specs' => 'array',
         ];
     }
 

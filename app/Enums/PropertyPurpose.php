@@ -8,4 +8,5 @@ enum PropertyPurpose: string
 {
     case Sale = 'sale';
     case Rent = 'rent';
+    case Installment = 'installment';
 }

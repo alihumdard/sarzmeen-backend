@@ -33,6 +33,8 @@ final class InviteAgent
                 'agency_id' => $agency->id,
                 'slug' => Str::slug($data['name']) . '-' . Str::random(5),
                 'title' => $data['title'] ?? null,
+                'bio' => $data['bio'] ?? null,
+                'office_address' => $data['office_address'] ?? null,
                 'status' => AccountStatus::Approved,
                 'invited_by' => $owner->id,
             ]);

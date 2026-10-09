@@ -34,8 +34,14 @@ class PropertyDetailResource extends JsonResource
             ? ucfirst($this->furnishing->value === 'semi' ? 'Semi Furnished' : $this->furnishing->value)
             : null;
 
-        $descriptionParagraphs = $this->description
-            ? array_values(array_filter(explode("\n", $this->description)))
+        // Descriptions are sanitised HTML from the rich-text editor. Keep the
+        // plain-text split for components that still expect paragraphs.
+        $plain = $this->description
+            ? trim(html_entity_decode(strip_tags(preg_replace('#<(p|br|/h2|/h3|/li)[^>]*>#i', "\n", $this->description) ?? '')))
+            : '';
+
+        $descriptionParagraphs = $plain !== ''
+            ? array_values(array_filter(array_map('trim', explode("\n", $plain))))
             : [];
 
         return [
@@ -71,6 +77,7 @@ class PropertyDetailResource extends JsonResource
             'listedAgo' => $this->published_at?->diffForHumans(),
             'description' => $this->description,
             'descriptionParagraphs' => $descriptionParagraphs,
+            'descriptionHtml' => $this->description ?? '',
             'highlights' => [],
             'features' => $this->whenLoaded('features', fn () => $this->features->pluck('name')->all()),
             'nearbyPlaces' => $this->whenLoaded('nearbyPlaces', fn () => $this->nearbyPlaces->map(fn ($p) => [
@@ -78,6 +85,7 @@ class PropertyDetailResource extends JsonResource
                 'distance' => $p->distance,
                 'kind' => $p->kind->value,
             ])->all()),
+            'specs' => $this->specs ?: new \stdClass(),
             'agent' => new PropertyAgentResource($this->whenLoaded('owner')),
             'metaTitle' => $this->meta_title ?? $this->title,
             'metaDescription' => $this->meta_description ?? mb_substr(strip_tags($this->description), 0, 160),

@@ -8,6 +8,7 @@ use App\Enums\PropertyStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PropertyResource;
 use App\Models\Property;
+use App\Models\User;
 use App\Notifications\PropertyStatusChangedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +18,8 @@ class PropertyController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Property::with(['images', 'features', 'propertyType', 'location', 'owner'])
+        $query = Property::with(['images', 'features', 'propertyType', 'location', 'agency'])
+            ->with(['owner' => fn ($q) => $q->morphWith([User::class => ['agent']])])
             ->latest();
 
         if ($request->filled('status')) {

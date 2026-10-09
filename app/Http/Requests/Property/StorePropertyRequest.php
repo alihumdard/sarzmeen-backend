@@ -8,8 +8,10 @@ use App\Enums\AreaUnit;
 use App\Enums\ConditionStatus;
 use App\Enums\Furnishing;
 use App\Enums\PropertyPurpose;
+use App\Support\PropertySpecs;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Mews\Purifier\Facades\Purifier;
 
 class StorePropertyRequest extends FormRequest
 {
@@ -18,12 +20,25 @@ class StorePropertyRequest extends FormRequest
         return $this->user()->can('properties.create');
     }
 
+    /**
+     * The description arrives as HTML from the rich-text editor, so strip
+     * anything outside the allowed tag set before it is validated or stored.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('description')) {
+            $this->merge([
+                'description' => Purifier::clean($this->input('description'), 'listing'),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
             'title' => ['required', 'string', 'max:255'],
             'headline' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:20000'],
             'propertyTypeId' => ['required', 'exists:property_types,id'],
             'locationId' => ['required', 'exists:locations,id'],
             'fullLocation' => ['nullable', 'string', 'max:500'],
@@ -50,6 +65,21 @@ class StorePropertyRequest extends FormRequest
             'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'metaTitle' => ['nullable', 'string', 'max:70'],
             'metaDescription' => ['nullable', 'string', 'max:160'],
-        ];
+            'specs' => ['nullable', 'array'],
+        ] + PropertySpecs::rules($this->integer('propertyTypeId'));
+    }
+
+    /**
+     * Type-specific fields, cast to the kinds config/property_schema.php
+     * declares and stripped of anything that type does not accept.
+     *
+     * @return array<string, mixed>
+     */
+    public function specs(): array
+    {
+        return PropertySpecs::coerce(
+            $this->input('specs', []) ?? [],
+            $this->integer('propertyTypeId'),
+        );
     }
 }

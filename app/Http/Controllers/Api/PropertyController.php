@@ -71,6 +71,14 @@ class PropertyController extends Controller
             $query->where('baths', '>=', (int) $request->input('baths'));
         }
 
+        if ($request->filled('agent')) {
+            $query->whereHas('owner', fn ($q) => $q->whereHas('agent', fn ($a) => $a->where('slug', $request->input('agent'))));
+        }
+
+        if ($request->filled('agency')) {
+            $query->where('agency_id', $request->input('agency'));
+        }
+
         if ($request->boolean('featured')) {
             $query->featured();
         }

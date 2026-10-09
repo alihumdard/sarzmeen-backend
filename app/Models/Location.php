@@ -44,6 +44,16 @@ class Location extends Model
         return $this->hasMany(Location::class, 'parent_id');
     }
 
+    public function properties(): HasMany
+    {
+        return $this->hasMany(Property::class);
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('status', TaxonomyStatus::Active);

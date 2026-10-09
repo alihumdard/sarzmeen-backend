@@ -48,12 +48,27 @@ class AgentController extends Controller
         }
 
         $validated = $request->validate([
+            'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'email', 'max:255', 'unique:users,email,' . $agent->user_id],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'password' => ['nullable', 'string', 'min:8'],
             'title' => ['nullable', 'string', 'max:100'],
             'bio' => ['nullable', 'string', 'max:2000'],
             'office_address' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $agent->update($validated);
+        $userFields = collect($validated)->only(['name', 'email', 'phone', 'password'])->filter()->all();
+        if (isset($userFields['password'])) {
+            $userFields['password'] = bcrypt($userFields['password']);
+        }
+        if ($userFields) {
+            $agent->user->update($userFields);
+        }
+
+        $agentFields = collect($validated)->only(['title', 'bio', 'office_address'])->all();
+        if ($agentFields) {
+            $agent->update($agentFields);
+        }
 
         return (new AgentResource($agent->load(['user', 'agency', 'specializations', 'languages'])))
             ->response();

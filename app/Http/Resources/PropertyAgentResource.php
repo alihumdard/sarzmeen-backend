@@ -44,6 +44,8 @@ class PropertyAgentResource extends JsonResource
 
     private function agentShape(User $user, $agent): array
     {
+        $imageService = app(ImageService::class);
+
         return [
             'id' => (string) $user->id,
             'slug' => $agent->slug,

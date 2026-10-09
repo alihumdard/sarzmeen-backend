@@ -20,55 +20,78 @@ class TaxonomySeeder extends Seeder
         $this->seedLocations();
     }
 
+    /**
+     * Four top-level categories only. Subcategories are property *types*, not
+     * nested categories — the form's Category -> Type cascade depends on that
+     * split, and config/property_schema.php keys its field groups off the type
+     * slugs seeded below.
+     */
     private function seedCategories(): void
     {
-        $topLevel = [
-            ['name' => 'Houses', 'slug' => 'houses', 'description' => 'Independent houses, villas and bungalows.', 'featured' => true],
-            ['name' => 'Flats & Apartments', 'slug' => 'flats-apartments', 'description' => 'Apartments, flats and penthouses in residential buildings.', 'featured' => true],
-            ['name' => 'Plots', 'slug' => 'plots', 'description' => 'Residential, commercial and agricultural land.', 'featured' => true],
-            ['name' => 'Commercial', 'slug' => 'commercial', 'description' => 'Shops, offices, warehouses and factories.', 'featured' => true],
-            ['name' => 'Farm Houses', 'slug' => 'farm-houses', 'description' => 'Farmhouses and country properties on large plots.', 'status' => 'inactive'],
-            ['name' => 'High Raise Projects', 'slug' => 'high-raise-projects', 'description' => 'Apartments, shops and food courts inside towers.'],
+        $categories = [
+            ['name' => 'Homes', 'slug' => 'homes', 'description' => 'Houses, villas, apartments and portions to live in.', 'featured' => true],
+            ['name' => 'Plots', 'slug' => 'plots', 'description' => 'Residential, commercial, industrial and agricultural land.', 'featured' => true],
+            ['name' => 'Commercial', 'slug' => 'commercial', 'description' => 'Shops, offices, factories, warehouses and plazas.', 'featured' => true],
+            ['name' => 'High-Rise', 'slug' => 'high-rise', 'description' => 'Apartments and commercial units inside tower developments.', 'featured' => true],
         ];
 
-        foreach ($topLevel as $cat) {
+        foreach ($categories as $cat) {
             Category::create(array_merge(['status' => 'active', 'featured' => false], $cat));
-        }
-
-        $children = [
-            ['name' => 'Upper Portion', 'slug' => 'upper-portion', 'description' => 'Upper floors let or sold separately from the main house.', 'parent' => 'houses'],
-            ['name' => 'Lower Portion', 'slug' => 'lower-portion', 'description' => 'Ground floors let or sold separately from the main house.', 'parent' => 'houses'],
-            ['name' => 'Residential Plot', 'slug' => 'residential-plot', 'description' => 'Plots approved for residential construction.', 'parent' => 'plots'],
-            ['name' => 'Commercial Plot', 'slug' => 'commercial-plot', 'description' => 'Plots approved for shops, offices and plazas.', 'parent' => 'plots'],
-            ['name' => 'Shops', 'slug' => 'shops', 'description' => 'Retail units on main roads and inside plazas.', 'parent' => 'commercial'],
-            ['name' => 'Offices', 'slug' => 'offices', 'description' => 'Office floors and suites in commercial buildings.', 'parent' => 'commercial'],
-        ];
-
-        foreach ($children as $child) {
-            $parentSlug = $child['parent'];
-            unset($child['parent']);
-            $parentId = Category::where('slug', $parentSlug)->value('id');
-            Category::create(array_merge(['status' => 'active', 'featured' => false, 'parent_id' => $parentId], $child));
         }
     }
 
     private function seedPropertyTypes(): void
     {
         $types = [
-            ['name' => 'House', 'slug' => 'house', 'description' => 'Independent houses on their own plot.', 'category' => 'houses', 'featured' => true],
-            ['name' => 'Upper Portion', 'slug' => 'upper-portion', 'description' => 'Upper floor let or sold separately.', 'category' => 'houses'],
-            ['name' => 'Lower Portion', 'slug' => 'lower-portion', 'description' => 'Ground floor let or sold separately.', 'category' => 'houses'],
-            ['name' => 'Farm House', 'slug' => 'farm-house', 'description' => 'Country houses on large plots.', 'category' => 'houses'],
-            ['name' => 'Flat', 'slug' => 'flat', 'description' => 'Apartments and flats in residential buildings.', 'category' => 'flats-apartments', 'featured' => true],
-            ['name' => 'Penthouse', 'slug' => 'penthouse', 'description' => 'Top-floor apartments with private terraces.', 'category' => 'flats-apartments'],
-            ['name' => 'Room', 'slug' => 'room', 'description' => 'Single rooms, usually let to students or professionals.', 'category' => 'flats-apartments'],
+            // Homes
+            ['name' => 'House', 'slug' => 'house', 'description' => 'Independent houses on their own plot.', 'category' => 'homes', 'featured' => true],
+            ['name' => 'Villa', 'slug' => 'villa', 'description' => 'Detached villas, often in gated communities.', 'category' => 'homes'],
+            ['name' => 'Townhouse', 'slug' => 'townhouse', 'description' => 'Terraced or semi-detached townhouses.', 'category' => 'homes'],
+            ['name' => 'Flat / Apartment', 'slug' => 'flat-apartment', 'description' => 'Apartments and flats in residential buildings.', 'category' => 'homes', 'featured' => true],
+            ['name' => 'Penthouse', 'slug' => 'penthouse', 'description' => 'Top-floor apartments with private terraces.', 'category' => 'homes'],
+            ['name' => 'Duplex', 'slug' => 'duplex', 'description' => 'Two-floor units joined by an internal staircase.', 'category' => 'homes'],
+            ['name' => 'Upper Portion', 'slug' => 'upper-portion', 'description' => 'Upper floor let or sold separately.', 'category' => 'homes'],
+            ['name' => 'Lower Portion', 'slug' => 'lower-portion', 'description' => 'Ground floor let or sold separately.', 'category' => 'homes'],
+            ['name' => 'Farm House', 'slug' => 'farm-house', 'description' => 'Country houses on large plots.', 'category' => 'homes'],
+            ['name' => 'Room', 'slug' => 'room', 'description' => 'Single rooms, usually let to students or professionals.', 'category' => 'homes'],
+
+            // Plots
             ['name' => 'Residential Plot', 'slug' => 'residential-plot', 'description' => 'Plots approved for residential construction.', 'category' => 'plots', 'featured' => true],
             ['name' => 'Commercial Plot', 'slug' => 'commercial-plot', 'description' => 'Plots approved for shops, offices and plazas.', 'category' => 'plots'],
-            ['name' => 'Agricultural Land', 'slug' => 'agricultural-land', 'description' => 'Farmland sold by acre or kanal.', 'category' => 'plots', 'status' => 'inactive'],
+            ['name' => 'Industrial Land', 'slug' => 'industrial-land', 'description' => 'Land in planned industrial zones.', 'category' => 'plots'],
+            ['name' => 'Agricultural Land', 'slug' => 'agricultural-land', 'description' => 'Farmland sold by acre or kanal.', 'category' => 'plots'],
+            ['name' => 'Plot File', 'slug' => 'plot-file', 'description' => 'Allocation and balloting files for upcoming schemes.', 'category' => 'plots'],
+
+            // Commercial
             ['name' => 'Shop', 'slug' => 'shop', 'description' => 'Retail units on main roads and inside plazas.', 'category' => 'commercial', 'featured' => true],
             ['name' => 'Office', 'slug' => 'office', 'description' => 'Office floors and suites in commercial buildings.', 'category' => 'commercial'],
+            ['name' => 'Showroom', 'slug' => 'showroom', 'description' => 'Display showrooms with wide frontage.', 'category' => 'commercial'],
+            ['name' => 'Factory', 'slug' => 'factory', 'description' => 'Manufacturing units with production and office areas.', 'category' => 'commercial'],
             ['name' => 'Warehouse', 'slug' => 'warehouse', 'description' => 'Storage space with loading access.', 'category' => 'commercial'],
-            ['name' => 'Food Court', 'slug' => 'food-court', 'description' => 'Food court units inside high-rise projects.', 'category' => 'high-raise-projects'],
+            ['name' => 'Building', 'slug' => 'building', 'description' => 'Whole commercial buildings sold or let as one.', 'category' => 'commercial'],
+            ['name' => 'Commercial Plaza', 'slug' => 'commercial-plaza', 'description' => 'Multi-storey plazas with shops and offices.', 'category' => 'commercial'],
+
+            // High-Rise (residential)
+            ['name' => 'Studio Apartment', 'slug' => 'studio-apartment', 'description' => 'Single-room apartments inside towers.', 'category' => 'high-rise', 'featured' => true],
+            ['name' => '1-Bed Apartment', 'slug' => 'one-bed-apartment', 'description' => 'One-bedroom tower apartments.', 'category' => 'high-rise'],
+            ['name' => '2-Bed Apartment', 'slug' => 'two-bed-apartment', 'description' => 'Two-bedroom tower apartments.', 'category' => 'high-rise', 'featured' => true],
+            ['name' => '3-Bed Apartment', 'slug' => 'three-bed-apartment', 'description' => 'Three-bedroom tower apartments.', 'category' => 'high-rise'],
+            ['name' => '4-Bed Apartment', 'slug' => 'four-bed-apartment', 'description' => 'Four-bedroom tower apartments.', 'category' => 'high-rise'],
+            ['name' => 'Luxury Apartment', 'slug' => 'luxury-apartment', 'description' => 'Premium tower apartments with upgraded finishes.', 'category' => 'high-rise'],
+            ['name' => 'Penthouse', 'slug' => 'high-rise-penthouse', 'description' => 'Top-floor penthouses inside a tower development.', 'category' => 'high-rise'],
+            ['name' => 'Duplex Penthouse', 'slug' => 'duplex-penthouse', 'description' => 'Two-floor penthouses at the top of a tower.', 'category' => 'high-rise'],
+            ['name' => 'Serviced Apartment', 'slug' => 'serviced-apartment', 'description' => 'Managed apartments let with services included.', 'category' => 'high-rise'],
+            ['name' => 'Hotel Apartment', 'slug' => 'hotel-apartment', 'description' => 'Hotel-operated apartment units.', 'category' => 'high-rise'],
+
+            // High-Rise (commercial)
+            ['name' => 'High-Rise Shop', 'slug' => 'high-rise-shop', 'description' => 'Retail units inside tower developments.', 'category' => 'high-rise'],
+            ['name' => 'High-Rise Office', 'slug' => 'high-rise-office', 'description' => 'Office units inside tower developments.', 'category' => 'high-rise'],
+            ['name' => 'Showroom', 'slug' => 'high-rise-showroom', 'description' => 'Display showrooms inside tower developments.', 'category' => 'high-rise'],
+            ['name' => 'Corporate Office', 'slug' => 'corporate-office', 'description' => 'Full corporate floors in office towers.', 'category' => 'high-rise'],
+            ['name' => 'Food Court', 'slug' => 'food-court', 'description' => 'Food court units inside high-rise projects.', 'category' => 'high-rise'],
+            ['name' => 'Restaurant', 'slug' => 'restaurant', 'description' => 'Restaurant spaces inside towers and malls.', 'category' => 'high-rise'],
+            ['name' => 'Commercial Floor', 'slug' => 'commercial-floor', 'description' => 'Entire commercial floors in a tower.', 'category' => 'high-rise'],
+            ['name' => 'Commercial Unit', 'slug' => 'commercial-unit', 'description' => 'General commercial units inside towers.', 'category' => 'high-rise'],
         ];
 
         foreach ($types as $type) {

@@ -20,8 +20,13 @@ class BlogController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Blog::published()
-            ->with(['category', 'author'])
-            ->latest('published_at');
+            ->with(['category', 'author']);
+
+        match ($request->string('sort')->toString()) {
+            'oldest' => $query->oldest('published_at'),
+            'popular' => $query->orderByDesc('read_time')->latest('published_at'),
+            default => $query->latest('published_at'),
+        };
 
         if ($request->filled('category')) {
             $query->whereHas('category', fn ($q) => $q->where('slug', $request->string('category')->toString()));

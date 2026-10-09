@@ -204,6 +204,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Inquiry management
         Route::get('/inquiries', [AdminInquiryController::class, 'index']);
+        Route::get('/inquiries/stats', [AdminInquiryController::class, 'stats']);
         Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show']);
         Route::patch('/inquiries/{inquiry}/status', [AdminInquiryController::class, 'updateStatus']);
         Route::delete('/inquiries/{inquiry}', [AdminInquiryController::class, 'destroy']);
