@@ -131,6 +131,20 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        \Illuminate\Database\Eloquent\Collection::class,
+        \Illuminate\Support\Collection::class,
+        \Carbon\CarbonImmutable::class,
+        \Carbon\Carbon::class,
+        \App\Models\Category::class,
+        \App\Models\Faq::class,
+        \App\Models\Location::class,
+        \App\Models\ProjectCategory::class,
+        \App\Models\PropertyType::class,
+        \App\Models\Testimonial::class,
+        \App\Enums\AccountStatus::class,
+        \App\Enums\LocationType::class,
+        \App\Enums\TaxonomyStatus::class,
+    ],
 
 ];

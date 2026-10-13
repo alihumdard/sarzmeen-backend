@@ -29,6 +29,18 @@ class ProjectController extends Controller
             });
         }
 
+        // Classification filters; each accepts a comma-separated list so the
+        // sidebar's checkboxes can send several values at once.
+        foreach (['type' => 'project_type', 'format' => 'project_format', 'payment' => 'payment_type', 'status' => 'status'] as $param => $column) {
+            if ($request->filled($param)) {
+                $query->whereIn($column, explode(',', $request->string($param)->toString()));
+            }
+        }
+
+        if ($request->filled('unit_type')) {
+            $query->whereHas('units', fn ($q) => $q->whereIn('unit_type', explode(',', $request->string('unit_type')->toString())));
+        }
+
         if ($request->filled('search')) {
             $search = $request->string('search')->toString();
             $query->whereRaw(
@@ -55,6 +67,12 @@ class ProjectController extends Controller
                 'paymentPlans',
                 'highlights',
                 'plotSizes',
+                'units',
+                'developerProfile',
+                'faqs',
+                'floorPlans',
+                // Private documents never reach the public resource.
+                'documents' => fn ($q) => $q->public(),
             ])
             ->firstOrFail();
 

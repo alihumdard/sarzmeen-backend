@@ -36,6 +36,12 @@ class ProjectResource extends JsonResource
             'image' => $imageService->url($cover ?? ''),
             'status' => $this->status,
             'developer' => $this->developer,
+            // Card shows Type + Format together (spec section 3).
+            'projectType' => $this->project_type?->value,
+            'projectTypeLabel' => $this->project_type?->label(),
+            'projectFormat' => $this->project_format?->value,
+            'projectFormatLabel' => $this->project_format?->label(),
+            'paymentTypeLabel' => $this->payment_type?->label(),
             'priceFrom' => $this->price_from,
             'verified' => $this->when($this->verified, true),
             'featured' => $this->when($this->featured, true),

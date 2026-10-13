@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\BlogStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Blog extends Model
 {
+    use RecordsActivity;
+
+    protected array $activityFields = ['title', 'status', 'published_at', 'featured'];
+
     protected $fillable = [
         'title',
         'slug',

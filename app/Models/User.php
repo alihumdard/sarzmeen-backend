@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\AccountStatus;
+use App\Models\Concerns\RecordsActivity;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -16,7 +17,10 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+    use HasFactory, HasRoles, Notifiable, RecordsActivity, SoftDeletes;
+
+    /** Deliberately excludes password and remember_token. */
+    protected array $activityFields = ['name', 'email', 'phone', 'status', 'city'];
 
     protected $fillable = [
         'name',

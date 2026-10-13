@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\LocationController;
 use App\Http\Controllers\Api\Admin\ProjectCategoryController;
 use App\Http\Controllers\Api\Admin\PropertyTypeController;
 use App\Http\Controllers\Api\Admin\RoleController;
+use App\Http\Controllers\Api\Admin\ActivityLogController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\StatsController as AdminStatsController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Api\Admin\ProjectController as AdminProjectController;
+use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Api\Admin\InquiryController as AdminInquiryController;
 use App\Http\Controllers\Api\Admin\TestimonialController as AdminTestimonialController;
@@ -186,6 +188,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
         Route::get('/permissions', [RoleController::class, 'permissions']);
 
+        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+        Route::get('/activity-logs/filters', [ActivityLogController::class, 'filters']);
+
         // Taxonomy CRUD
         Route::apiResource('categories', CategoryController::class)->except('index');
         Route::apiResource('property-types', PropertyTypeController::class)->except('index');
@@ -198,6 +203,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Project CRUD
         Route::apiResource('projects', AdminProjectController::class);
+        Route::apiResource('developers', AdminDeveloperController::class);
 
         // Blog CRUD
         Route::apiResource('blogs', AdminBlogController::class);

@@ -10,6 +10,7 @@ use App\Enums\Furnishing;
 use App\Enums\ListedBy;
 use App\Enums\PropertyPurpose;
 use App\Enums\PropertyStatus;
+use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,7 +19,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Property extends Model
 {
+    use RecordsActivity;
     use SoftDeletes;
+
+    /** Fields worth an audit entry; the rest change too often to be useful. */
+    protected array $activityFields = [
+        'title', 'status', 'price', 'purpose', 'property_type_id',
+        'location_id', 'featured', 'verified',
+    ];
 
     protected $fillable = [
         'slug',

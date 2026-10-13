@@ -36,7 +36,7 @@ class ProjectController extends Controller
     {
         $project->load([
             'images', 'category', 'location.parent',
-            'amenities', 'paymentPlans', 'highlights', 'plotSizes',
+            'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans',
         ]);
 
         return new ProjectDetailResource($project);
@@ -51,7 +51,17 @@ class ProjectController extends Controller
                 'slug' => $data['slug'],
                 'name' => $data['name'],
                 'project_category_id' => $data['projectCategoryId'],
+                'project_type' => $data['projectType'],
+                'project_format' => $data['projectFormat'],
+                'payment_type' => $data['paymentType'],
+                'towers_count' => $data['towersCount'] ?? null,
+                'total_floors' => $data['totalFloors'] ?? null,
+                'basement_floors' => $data['basementFloors'] ?? null,
+                'parking_spaces' => $data['parkingSpaces'] ?? null,
+                'expected_completion' => $data['expectedCompletion'] ?? null,
+                'possession_timeline' => $data['possessionTimeline'] ?? null,
                 'developer' => $data['developer'],
+                'developer_id' => $data['developerId'] ?? null,
                 'location_id' => $data['locationId'],
                 'full_location' => $data['fullLocation'] ?? '',
                 'status' => $data['status'],
@@ -63,6 +73,7 @@ class ProjectController extends Controller
                 'featured' => $data['featured'] ?? false,
                 'meta_title' => $data['metaTitle'] ?? null,
                 'meta_description' => $data['metaDescription'] ?? null,
+                'payment_terms' => $data['paymentTerms'] ?? [],
             ]);
 
             $this->syncRelations($project, $data);
@@ -70,7 +81,7 @@ class ProjectController extends Controller
             return $project;
         });
 
-        $project->load(['images', 'category', 'location.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes']);
+        $project->load(['images', 'category', 'location.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans']);
 
         return (new ProjectDetailResource($project))
             ->response()
@@ -86,7 +97,17 @@ class ProjectController extends Controller
                 'slug' => $data['slug'],
                 'name' => $data['name'],
                 'project_category_id' => $data['projectCategoryId'],
+                'project_type' => $data['projectType'],
+                'project_format' => $data['projectFormat'],
+                'payment_type' => $data['paymentType'],
+                'towers_count' => $data['towersCount'] ?? null,
+                'total_floors' => $data['totalFloors'] ?? null,
+                'basement_floors' => $data['basementFloors'] ?? null,
+                'parking_spaces' => $data['parkingSpaces'] ?? null,
+                'expected_completion' => $data['expectedCompletion'] ?? null,
+                'possession_timeline' => $data['possessionTimeline'] ?? null,
                 'developer' => $data['developer'],
+                'developer_id' => $data['developerId'] ?? null,
                 'location_id' => $data['locationId'],
                 'full_location' => $data['fullLocation'] ?? '',
                 'status' => $data['status'],
@@ -98,12 +119,13 @@ class ProjectController extends Controller
                 'featured' => $data['featured'] ?? false,
                 'meta_title' => $data['metaTitle'] ?? null,
                 'meta_description' => $data['metaDescription'] ?? null,
+                'payment_terms' => $data['paymentTerms'] ?? [],
             ]);
 
             $this->syncRelations($project, $data);
         });
 
-        $project->load(['images', 'category', 'location.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes']);
+        $project->load(['images', 'category', 'location.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans']);
 
         return new ProjectDetailResource($project);
     }
@@ -155,6 +177,57 @@ class ProjectController extends Controller
                     $project->paymentPlans()->create([
                         'label' => $plan['label'],
                         'value' => $plan['value'],
+                        'sort_order' => $i,
+                    ]);
+                }
+            }
+        }
+
+        if (array_key_exists('faqs', $data)) {
+            $project->faqs()->delete();
+            if (! empty($data['faqs'])) {
+                foreach ($data['faqs'] as $i => $faq) {
+                    $project->faqs()->create([
+                        'question' => $faq['question'],
+                        'answer' => $faq['answer'],
+                        'sort_order' => $i,
+                    ]);
+                }
+            }
+        }
+
+        if (array_key_exists('floorPlans', $data)) {
+            $project->floorPlans()->delete();
+            if (! empty($data['floorPlans'])) {
+                foreach ($data['floorPlans'] as $i => $plan) {
+                    $project->floorPlans()->create([
+                        'name' => $plan['name'],
+                        'floor_number' => $plan['floorNumber'] ?? null,
+                        'tower' => $plan['tower'] ?? null,
+                        'description' => $plan['description'] ?? '',
+                        'sort_order' => $i,
+                    ]);
+                }
+            }
+        }
+
+        if (array_key_exists('units', $data)) {
+            $project->units()->delete();
+            if (! empty($data['units'])) {
+                foreach ($data['units'] as $i => $unit) {
+                    $project->units()->create([
+                        'unit_type' => $unit['unitType'],
+                        'unit_name' => $unit['unitName'] ?? null,
+                        'category' => $unit['category'] ?? 'residential',
+                        'area' => $unit['area'],
+                        'min_area' => $unit['minArea'] ?? $unit['area'],
+                        'max_area' => $unit['maxArea'] ?? $unit['area'],
+                        'area_unit' => $unit['areaUnit'] ?? 'sqft',
+                        'rate_per_sqft' => $unit['ratePerSqft'],
+                        'starting_price' => $unit['area'] * $unit['ratePerSqft'],
+                        'max_price' => $unit['maxPrice'] ?? null,
+                        'availability' => $unit['availability'] ?? 'available',
+                        'details' => $unit['details'] ?? [],
                         'sort_order' => $i,
                     ]);
                 }

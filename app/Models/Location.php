@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\LocationType;
 use App\Enums\TaxonomyStatus;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Location extends Model
 {
+    use RecordsActivity;
+
+    protected array $activityFields = ['name', 'type', 'parent_id'];
+
     protected $fillable = [
         'parent_id',
         'name',

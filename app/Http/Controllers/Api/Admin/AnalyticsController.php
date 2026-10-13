@@ -28,16 +28,22 @@ class AnalyticsController extends Controller
             return [
                 'propertiesByStatus' => Property::select('status', DB::raw('count(*) as count'))
                     ->groupBy('status')
-                    ->pluck('count', 'status'),
+                    ->toBase()
+                    ->pluck('count', 'status')
+                    ->all(),
 
                 'propertiesByPurpose' => Property::where('status', PropertyStatus::Published)
                     ->select('purpose', DB::raw('count(*) as count'))
                     ->groupBy('purpose')
-                    ->pluck('count', 'purpose'),
+                    ->toBase()
+                    ->pluck('count', 'purpose')
+                    ->all(),
 
                 'inquiriesByStatus' => Inquiry::select('status', DB::raw('count(*) as count'))
                     ->groupBy('status')
-                    ->pluck('count', 'status'),
+                    ->toBase()
+                    ->pluck('count', 'status')
+                    ->all(),
 
                 'newListingsLast30Days' => Property::where('created_at', '>=', $thirtyDaysAgo)->count(),
                 'newInquiriesLast30Days' => Inquiry::where('created_at', '>=', $thirtyDaysAgo)->count(),
@@ -63,7 +69,10 @@ class AnalyticsController extends Controller
                 ->groupBy('city')
                 ->orderByDesc('count')
                 ->limit(15)
-                ->get();
+                ->toBase()
+                ->get()
+                ->map(fn ($row) => ['city' => $row->city, 'count' => (int) $row->count])
+                ->all();
         });
 
         return response()->json(['data' => $data]);
@@ -77,7 +86,10 @@ class AnalyticsController extends Controller
                 ->select('property_types.name as type', DB::raw('count(*) as count'))
                 ->groupBy('property_types.name')
                 ->orderByDesc('count')
-                ->get();
+                ->toBase()
+                ->get()
+                ->map(fn ($row) => ['type' => $row->type, 'count' => (int) $row->count])
+                ->all();
         });
 
         return response()->json(['data' => $data]);
@@ -172,7 +184,7 @@ class AnalyticsController extends Controller
                     'label' => $range['label'],
                     'count' => $query->count(),
                 ];
-            });
+            })->all();
         });
 
         return response()->json(['data' => $data]);
