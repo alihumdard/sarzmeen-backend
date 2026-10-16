@@ -22,7 +22,7 @@ class ProjectController extends Controller
     ) {}
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Project::with(['images', 'category', 'location.parent'])
+        $query = Project::with(['images', 'category', 'location.parent.parent'])
             ->latest();
 
         if ($request->filled('category')) {
@@ -35,7 +35,7 @@ class ProjectController extends Controller
     public function show(Project $project): ProjectDetailResource
     {
         $project->load([
-            'images', 'category', 'location.parent',
+            'images', 'category', 'location.parent.parent',
             'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans',
         ]);
 
@@ -73,6 +73,11 @@ class ProjectController extends Controller
                 'featured' => $data['featured'] ?? false,
                 'meta_title' => $data['metaTitle'] ?? null,
                 'meta_description' => $data['metaDescription'] ?? null,
+                'focus_keyword' => $data['focusKeyword'] ?? null,
+                'canonical_url' => $data['canonicalUrl'] ?? null,
+                'og_title' => $data['ogTitle'] ?? null,
+                'og_description' => $data['ogDescription'] ?? null,
+                'og_image' => $data['ogImage'] ?? null,
                 'payment_terms' => $data['paymentTerms'] ?? [],
             ]);
 
@@ -81,7 +86,7 @@ class ProjectController extends Controller
             return $project;
         });
 
-        $project->load(['images', 'category', 'location.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans']);
+        $project->load(['images', 'category', 'location.parent.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans']);
 
         return (new ProjectDetailResource($project))
             ->response()
@@ -119,13 +124,18 @@ class ProjectController extends Controller
                 'featured' => $data['featured'] ?? false,
                 'meta_title' => $data['metaTitle'] ?? null,
                 'meta_description' => $data['metaDescription'] ?? null,
+                'focus_keyword' => $data['focusKeyword'] ?? null,
+                'canonical_url' => $data['canonicalUrl'] ?? null,
+                'og_title' => $data['ogTitle'] ?? null,
+                'og_description' => $data['ogDescription'] ?? null,
+                'og_image' => $data['ogImage'] ?? null,
                 'payment_terms' => $data['paymentTerms'] ?? [],
             ]);
 
             $this->syncRelations($project, $data);
         });
 
-        $project->load(['images', 'category', 'location.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans']);
+        $project->load(['images', 'category', 'location.parent.parent', 'amenities', 'paymentPlans', 'highlights', 'plotSizes', 'units', 'developerProfile', 'faqs', 'documents', 'floorPlans']);
 
         return new ProjectDetailResource($project);
     }
@@ -229,6 +239,42 @@ class ProjectController extends Controller
                         'availability' => $unit['availability'] ?? 'available',
                         'details' => $unit['details'] ?? [],
                         'sort_order' => $i,
+                    ]);
+                }
+            }
+        }
+
+        if (array_key_exists('towers', $data)) {
+            /*
+             * Replaced wholesale, like units: towers carry no history of their
+             * own and cascade to their floors, so rebuilding is simpler than
+             * diffing and cannot leave orphans.
+             */
+            $project->towers()->delete();
+
+            foreach ($data['towers'] ?? [] as $i => $tower) {
+                if (empty($tower['name'])) {
+                    continue;
+                }
+
+                $created = $project->towers()->create([
+                    'name' => $tower['name'],
+                    'floors_count' => $tower['floorsCount'] ?? null,
+                    'units_count' => $tower['unitsCount'] ?? null,
+                    'description' => $tower['description'] ?? null,
+                    'sort_order' => $i,
+                ]);
+
+                foreach ($tower['floors'] ?? [] as $j => $floor) {
+                    if (! isset($floor['floorNumber'])) {
+                        continue;
+                    }
+
+                    $created->floors()->create([
+                        'name' => $floor['name'] ?? null,
+                        'floor_number' => (int) $floor['floorNumber'],
+                        'description' => $floor['description'] ?? null,
+                        'sort_order' => $j,
                     ]);
                 }
             }

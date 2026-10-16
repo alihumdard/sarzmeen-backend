@@ -19,8 +19,30 @@ class PropertyController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Property::with(['images', 'features', 'propertyType', 'location', 'agency'])
-            ->with(['owner' => fn ($q) => $q->morphWith([User::class => ['agent']])])
+            ->with(['owner' => fn ($q) => $q->morphWith([User::class => ['agent.specializations', 'agent.languages']])])
             ->latest();
+
+        /*
+         * Only `properties.edit.any` sees the whole catalogue. Everyone else
+         * is limited to their own listings — an agency to its team's, an
+         * individual to the ones they own.
+         */
+        $user = $request->user();
+
+        if (! $user->can('properties.edit.any')) {
+            $agencyId = $user->agency?->id;
+
+            $query->where(function ($q) use ($user, $agencyId) {
+                $q->where(function ($own) use ($user) {
+                    $own->where('owner_type', User::class)
+                        ->where('owner_id', $user->id);
+                });
+
+                if ($agencyId) {
+                    $q->orWhere('agency_id', $agencyId);
+                }
+            });
+        }
 
         if ($request->filled('status')) {
             $status = PropertyStatus::tryFrom($request->string('status')->toString());

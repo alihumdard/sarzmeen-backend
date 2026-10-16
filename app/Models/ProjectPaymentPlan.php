@@ -11,11 +11,20 @@ class ProjectPaymentPlan extends Model
 {
     public $timestamps = false;
 
-    protected $fillable = ['project_id', 'label', 'value', 'sort_order'];
+    protected $fillable = [
+        'project_id', 'label', 'value', 'sort_order',
+        'component', 'percent', 'amount', 'count',
+        'frequency', 'pinned', 'plan_name',
+    ];
 
     protected function casts(): array
     {
-        return ['sort_order' => 'integer'];
+        return [
+            'sort_order' => 'integer',
+            'percent' => 'decimal:4',
+            'amount' => 'decimal:2',
+            'count' => 'integer',
+        ];
     }
 
     public function project(): BelongsTo

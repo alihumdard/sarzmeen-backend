@@ -75,13 +75,53 @@ class ProjectDetailResource extends JsonResource
             'paymentPlan' => $this->whenLoaded('paymentPlans', fn () => $this->paymentPlans->map(fn ($p) => [
                 'label' => $p->label,
                 'value' => $p->value,
+                // Structured fields; null `component` means this row is still
+                // free text and cannot be calculated with.
+                'component' => $p->component,
+                'percent' => $p->percent !== null ? (float) $p->percent : null,
+                'amount' => $p->amount !== null ? (float) $p->amount : null,
+                'count' => (int) $p->count,
+                'frequency' => $p->frequency,
+                'pinned' => $p->pinned,
+                'planName' => $p->plan_name,
             ])->all()),
+            'towers' => $this->whenLoaded('towers', fn () => $this->towers->map(fn ($t) => [
+                'id' => (string) $t->id,
+                'name' => $t->name,
+                'floorsCount' => $t->floors_count,
+                'unitsCount' => $t->units_count,
+                'image' => $t->image,
+                'description' => $t->description,
+                'floors' => $t->relationLoaded('floors')
+                    ? $t->floors->map(fn ($f) => [
+                        'id' => (string) $f->id,
+                        'name' => $f->displayName(),
+                        'floorNumber' => $f->floor_number,
+                        'floorPlanImage' => $f->floor_plan_image,
+                        'floorPlanPdf' => $f->floor_plan_pdf,
+                    ])->all()
+                    : [],
+            ])->all()),
+            // Per-project SEO; falls back to the site-wide settings when null.
+            'seo' => [
+                'metaTitle' => $this->meta_title,
+                'metaDescription' => $this->meta_description,
+                'focusKeyword' => $this->focus_keyword,
+                'canonicalUrl' => $this->canonical_url,
+                'ogTitle' => $this->og_title,
+                'ogDescription' => $this->og_description,
+                'ogImage' => $this->og_image,
+            ],
             'totalArea' => $this->total_area,
             'plotSizes' => $this->whenLoaded('plotSizes', fn () => $this->plotSizes->pluck('size')->all()),
             'units' => $this->whenLoaded('units', fn () => $this->units->map(fn ($u) => [
                 'id' => (string) $u->id,
                 'unitType' => $u->unit_type,
                 'unitName' => $u->unit_name,
+                // Tower/floor placement; null when the project has no towers.
+                'towerId' => $u->project_tower_id !== null ? (string) $u->project_tower_id : null,
+                'floorId' => $u->project_floor_id !== null ? (string) $u->project_floor_id : null,
+                'unitNumber' => $u->unit_number,
                 'category' => $u->category->value,
                 'categoryLabel' => $u->category->label(),
                 'area' => (float) $u->area,

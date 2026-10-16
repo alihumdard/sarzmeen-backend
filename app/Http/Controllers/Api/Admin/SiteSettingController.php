@@ -11,8 +11,19 @@ use Illuminate\Http\Request;
 
 class SiteSettingController extends Controller
 {
-    public function index(string $group): JsonResponse
+    /**
+     * Groups the unauthenticated /site-settings/{group} route may return.
+     * `email` and `system` stay admin-only — they describe infrastructure.
+     */
+    private const PUBLIC_GROUPS = ['homepage', 'seo', 'appearance', 'general'];
+
+    public function index(Request $request, string $group): JsonResponse
     {
+        // The same method serves the public route and the admin one.
+        if (! $request->user() && ! in_array($group, self::PUBLIC_GROUPS, true)) {
+            return response()->json(['message' => 'Not found.'], 404);
+        }
+
         $settings = SiteSetting::getGroup($group);
 
         return response()->json(['data' => $settings]);

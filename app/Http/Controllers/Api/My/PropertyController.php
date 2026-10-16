@@ -40,7 +40,8 @@ class PropertyController extends Controller
 
     public function show(Request $request, Property $property): JsonResponse
     {
-        Gate::authorize('view', $property);
+        // 'manage', not 'view': this endpoint exposes drafts and edit internals.
+        Gate::authorize('manage', $property);
 
         $property->load(['images', 'features', 'propertyType', 'propertyType.category', 'location']);
 

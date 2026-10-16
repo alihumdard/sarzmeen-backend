@@ -29,6 +29,11 @@ class BlogController extends Controller
         $query = Blog::with(['category', 'author'])
             ->latest();
 
+        // Without `blogs.manage.any` a user only ever sees their own posts.
+        if (! $request->user()->can('blogs.manage.any')) {
+            $query->where('author_id', $request->user()->id);
+        }
+
         if ($request->filled('status')) {
             $status = BlogStatus::tryFrom($request->string('status')->toString());
             if ($status) {
@@ -41,8 +46,21 @@ class BlogController extends Controller
         );
     }
 
-    public function show(Blog $blog): BlogDetailResource
+    /** Blocks acting on someone else's post without `blogs.manage.any`. */
+    private function authorizeBlog(Request $request, Blog $blog): void
     {
+        if (
+            ! $request->user()->can('blogs.manage.any')
+            && $blog->author_id !== $request->user()->id
+        ) {
+            abort(403, 'You can only manage your own blog posts.');
+        }
+    }
+
+    public function show(Request $request, Blog $blog): BlogDetailResource
+    {
+        $this->authorizeBlog($request, $blog);
+
         $blog->load(['category', 'author', 'tags']);
 
         return new BlogDetailResource($blog);
@@ -82,6 +100,8 @@ class BlogController extends Controller
 
     public function update(BlogRequest $request, Blog $blog): BlogDetailResource
     {
+        $this->authorizeBlog($request, $blog);
+
         $data = $this->mapInput($request->validated());
 
         if ($request->hasFile('imageFile')) {
@@ -115,8 +135,10 @@ class BlogController extends Controller
         return new BlogDetailResource($blog);
     }
 
-    public function destroy(Blog $blog): JsonResponse
+    public function destroy(Request $request, Blog $blog): JsonResponse
     {
+        $this->authorizeBlog($request, $blog);
+
         if ($blog->image) {
             $this->imageService->delete($blog->image);
         }

@@ -49,6 +49,11 @@ class Project extends Model
         'featured',
         'meta_title',
         'meta_description',
+        'focus_keyword',
+        'canonical_url',
+        'og_title',
+        'og_description',
+        'og_image',
         'payment_terms',
     ];
 
@@ -102,6 +107,11 @@ class Project extends Model
     public function plotSizes(): HasMany
     {
         return $this->hasMany(ProjectPlotSize::class);
+    }
+
+    public function towers(): HasMany
+    {
+        return $this->hasMany(ProjectTower::class)->orderBy('sort_order');
     }
 
     public function units(): HasMany

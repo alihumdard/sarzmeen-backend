@@ -15,7 +15,7 @@ class ProjectController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Project::with(['images', 'category', 'location.parent'])
+        $query = Project::with(['images', 'category', 'location.parent.parent'])
             ->latest();
 
         if ($request->filled('category')) {
@@ -62,12 +62,13 @@ class ProjectController extends Controller
             ->with([
                 'images',
                 'category',
-                'location.parent',
+                'location.parent.parent',
                 'amenities',
                 'paymentPlans',
                 'highlights',
                 'plotSizes',
                 'units',
+                'towers.floors',
                 'developerProfile',
                 'faqs',
                 'floorPlans',

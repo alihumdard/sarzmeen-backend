@@ -62,6 +62,21 @@ class ProjectRequest extends FormRequest
             'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'metaTitle' => ['nullable', 'string', 'max:70'],
             'metaDescription' => ['nullable', 'string', 'max:160'],
+            'towers' => ['nullable', 'array'],
+            'towers.*.name' => ['required_with:towers', 'string', 'max:255'],
+            'towers.*.floorsCount' => ['nullable', 'integer', 'min:0', 'max:300'],
+            'towers.*.unitsCount' => ['nullable', 'integer', 'min:0', 'max:10000'],
+            'towers.*.description' => ['nullable', 'string', 'max:2000'],
+            'towers.*.floors' => ['nullable', 'array'],
+            // Signed: basements are negative, ground is 0.
+            'towers.*.floors.*.floorNumber' => ['required_with:towers.*.floors', 'integer', 'min:-20', 'max:300'],
+            'towers.*.floors.*.name' => ['nullable', 'string', 'max:255'],
+            'towers.*.floors.*.description' => ['nullable', 'string', 'max:1000'],
+            'focusKeyword' => ['nullable', 'string', 'max:255'],
+            'canonicalUrl' => ['nullable', 'string', 'max:500'],
+            'ogTitle' => ['nullable', 'string', 'max:255'],
+            'ogDescription' => ['nullable', 'string', 'max:500'],
+            'ogImage' => ['nullable', 'string', 'max:500'],
 
             'developerId' => ['nullable', 'exists:developers,id'],
 

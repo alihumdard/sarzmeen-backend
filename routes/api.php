@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\My\AvatarController;
 use App\Http\Controllers\Api\My\ConversationController;
 use App\Http\Controllers\Api\My\NotificationController;
+use App\Http\Controllers\Api\My\ProfileController as MyProfileController;
 use App\Http\Controllers\Api\My\PropertyController as MyPropertyController;
 use App\Http\Controllers\Api\My\PropertyAnalyticsController;
 use App\Http\Controllers\Api\My\PropertyImageController;
@@ -136,6 +137,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/avatar', [AvatarController::class, 'store'])->middleware('throttle:uploads');
         Route::delete('/avatar', [AvatarController::class, 'destroy']);
 
+        // Own profile
+        Route::put('/profile', [MyProfileController::class, 'update']);
+        Route::post('/profile', [MyProfileController::class, 'update']);
+        Route::put('/profile/password', [MyProfileController::class, 'updatePassword']);
+
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index']);
         Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
@@ -178,48 +184,75 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/properties', [AgencyPropertyController::class, 'index']);
     });
 
-    // Admin routes
-    Route::middleware('role:admin')->prefix('admin')->group(function () {
+    /*
+     * Admin area. The group itself only requires *some* admin-area permission —
+     * each route below enforces the specific one it needs, so a non-admin role
+     * granted e.g. `blogs.manage` can use exactly that section and nothing else.
+     */
+    Route::middleware(
+        'role_or_permission:admin|users.view|users.approve|roles.manage|categories.manage'
+        .'|properties.edit.own|properties.edit.any|properties.publish'
+        .'|projects.edit.own|projects.edit.any|blogs.manage'
+        .'|inquiries.view.own|inquiries.view.any|testimonials.manage|faqs.manage|settings.manage'
+    )->prefix('admin')->group(function () {
+        // Dashboard figures; the controller scopes them to the caller's role.
         Route::get('/stats', AdminStatsController::class);
-        Route::get('/accounts', [AccountController::class, 'index']);
-        Route::patch('/accounts/{user}/status', [AccountController::class, 'updateStatus']);
-        Route::get('/roles', [RoleController::class, 'index']);
-        Route::get('/roles/{role}', [RoleController::class, 'show']);
-        Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
-        Route::get('/permissions', [RoleController::class, 'permissions']);
+        Route::get('/accounts', [AccountController::class, 'index'])
+            ->middleware('permission:users.view');
+        Route::patch('/accounts/{user}/status', [AccountController::class, 'updateStatus'])
+            ->middleware('permission:users.approve');
+        Route::middleware('permission:roles.manage')->group(function () {
+            Route::get('/roles', [RoleController::class, 'index']);
+            Route::get('/roles/{role}', [RoleController::class, 'show']);
+            Route::put('/roles/{role}/permissions', [RoleController::class, 'updatePermissions']);
+            Route::get('/permissions', [RoleController::class, 'permissions']);
+        });
 
-        Route::get('/activity-logs', [ActivityLogController::class, 'index']);
-        Route::get('/activity-logs/filters', [ActivityLogController::class, 'filters']);
+        Route::middleware('permission:users.view')->group(function () {
+            Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+            Route::get('/activity-logs/filters', [ActivityLogController::class, 'filters']);
+        });
 
         // Taxonomy CRUD
-        Route::apiResource('categories', CategoryController::class)->except('index');
-        Route::apiResource('property-types', PropertyTypeController::class)->except('index');
-        Route::apiResource('project-categories', ProjectCategoryController::class)->except('index');
-        Route::apiResource('locations', LocationController::class)->except('index');
+        Route::middleware('permission:categories.manage')->group(function () {
+            Route::apiResource('categories', CategoryController::class)->except('index');
+            Route::apiResource('property-types', PropertyTypeController::class)->except('index');
+            Route::apiResource('project-categories', ProjectCategoryController::class)->except('index');
+            Route::apiResource('locations', LocationController::class)->except('index');
+        });
 
         // Property moderation
-        Route::get('/properties', [AdminPropertyController::class, 'index']);
-        Route::patch('/properties/{property}/status', [AdminPropertyController::class, 'updateStatus']);
+        Route::get('/properties', [AdminPropertyController::class, 'index'])
+            ->middleware('permission:properties.edit.own|properties.edit.any');
+        Route::patch('/properties/{property}/status', [AdminPropertyController::class, 'updateStatus'])
+            ->middleware('permission:properties.publish');
 
         // Project CRUD
-        Route::apiResource('projects', AdminProjectController::class);
-        Route::apiResource('developers', AdminDeveloperController::class);
+        Route::middleware('permission:projects.edit.any')->group(function () {
+            Route::apiResource('projects', AdminProjectController::class);
+            Route::apiResource('developers', AdminDeveloperController::class);
+        });
 
         // Blog CRUD
-        Route::apiResource('blogs', AdminBlogController::class);
+        Route::apiResource('blogs', AdminBlogController::class)
+            ->middleware('permission:blogs.manage');
 
         // Inquiry management
-        Route::get('/inquiries', [AdminInquiryController::class, 'index']);
-        Route::get('/inquiries/stats', [AdminInquiryController::class, 'stats']);
-        Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show']);
-        Route::patch('/inquiries/{inquiry}/status', [AdminInquiryController::class, 'updateStatus']);
-        Route::delete('/inquiries/{inquiry}', [AdminInquiryController::class, 'destroy']);
+        Route::middleware('permission:inquiries.view.own|inquiries.view.any')->group(function () {
+            Route::get('/inquiries', [AdminInquiryController::class, 'index']);
+            Route::get('/inquiries/stats', [AdminInquiryController::class, 'stats']);
+            Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show']);
+            Route::patch('/inquiries/{inquiry}/status', [AdminInquiryController::class, 'updateStatus']);
+            Route::delete('/inquiries/{inquiry}', [AdminInquiryController::class, 'destroy']);
+        });
 
         // Testimonial CRUD
-        Route::apiResource('testimonials', AdminTestimonialController::class)->except('show');
+        Route::apiResource('testimonials', AdminTestimonialController::class)->except('show')
+            ->middleware('permission:testimonials.manage');
 
         // FAQ CRUD
-        Route::apiResource('faqs', AdminFaqController::class)->except('show');
+        Route::apiResource('faqs', AdminFaqController::class)->except('show')
+            ->middleware('permission:faqs.manage');
 
         // Analytics
         Route::get('/analytics/overview', [AnalyticsController::class, 'overview']);
@@ -238,17 +271,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Subscription plans CRUD
         Route::apiResource('subscription-plans', SubscriptionPlanController::class)
-            ->parameters(['subscription-plans' => 'plan']);
+            ->parameters(['subscription-plans' => 'plan'])
+            ->middleware('permission:settings.manage');
 
         // Payment management
-        Route::get('/payments', [AdminPaymentController::class, 'index']);
-        Route::get('/payments/{payment}', [AdminPaymentController::class, 'show']);
-        Route::patch('/payments/{payment}/status', [AdminPaymentController::class, 'updateStatus']);
+        Route::middleware('permission:settings.manage')->group(function () {
+            Route::get('/payments', [AdminPaymentController::class, 'index']);
+            Route::get('/payments/{payment}', [AdminPaymentController::class, 'show']);
+            Route::patch('/payments/{payment}/status', [AdminPaymentController::class, 'updateStatus']);
+        });
 
         // Site settings
-        Route::get('/settings/{group}', [SiteSettingController::class, 'index']);
-        Route::get('/settings/{group}/{key}', [SiteSettingController::class, 'show']);
-        Route::put('/settings/{group}', [SiteSettingController::class, 'update']);
-        Route::put('/settings/{group}/{key}', [SiteSettingController::class, 'updateKey']);
+        Route::middleware('permission:settings.manage')->group(function () {
+            Route::get('/settings/{group}', [SiteSettingController::class, 'index']);
+            Route::get('/settings/{group}/{key}', [SiteSettingController::class, 'show']);
+            Route::put('/settings/{group}', [SiteSettingController::class, 'update']);
+            Route::put('/settings/{group}/{key}', [SiteSettingController::class, 'updateKey']);
+        });
     });
 });

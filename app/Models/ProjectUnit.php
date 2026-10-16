@@ -14,6 +14,9 @@ class ProjectUnit extends Model
 {
     protected $fillable = [
         'project_id',
+        'project_tower_id',
+        'project_floor_id',
+        'unit_number',
         'unit_name',
         'unit_type',
         'category',

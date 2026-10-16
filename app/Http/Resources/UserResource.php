@@ -22,6 +22,8 @@ class UserResource extends JsonResource
             'avatar' => $imageService->url($this->avatar ?? ''),
             'city' => $this->city,
             'role' => $this->roles->first()?->name,
+            // Drives which admin screens the UI shows; the API enforces these too.
+            'permissions' => $this->getAllPermissions()->pluck('name')->values(),
             'status' => $this->status->value,
             'emailVerified' => $this->hasVerifiedEmail(),
             'joinedAt' => $this->created_at->toIso8601String(),

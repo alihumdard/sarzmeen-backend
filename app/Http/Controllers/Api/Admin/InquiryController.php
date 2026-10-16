@@ -8,6 +8,7 @@ use App\Enums\InquiryStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\InquiryResource;
 use App\Models\Inquiry;
+use App\Models\User;
 use App\Notifications\InquiryStatusChangedNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,30 @@ class InquiryController extends Controller
     {
         $query = Inquiry::with(['property.images', 'property.propertyType', 'project'])
             ->latest();
+
+        /*
+         * `inquiries.view.any` sees every enquiry. Everyone else sees only the
+         * ones about their own listings; an agency also sees those belonging
+         * to its agents, via the property's agency_id.
+         */
+        $user = $request->user();
+
+        if (! $user->can('inquiries.view.any')) {
+            $agencyId = $user->agency?->id;
+
+            $query->whereHas('property', function ($p) use ($user, $agencyId) {
+                $p->where(function ($q) use ($user, $agencyId) {
+                    $q->where(function ($own) use ($user) {
+                        $own->where('owner_type', User::class)
+                            ->where('owner_id', $user->id);
+                    });
+
+                    if ($agencyId) {
+                        $q->orWhere('agency_id', $agencyId);
+                    }
+                });
+            });
+        }
 
         if ($request->filled('status')) {
             $status = InquiryStatus::tryFrom($request->string('status')->toString());

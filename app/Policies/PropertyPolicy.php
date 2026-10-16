@@ -14,9 +14,20 @@ class PropertyPolicy
         return true;
     }
 
+    /** Public detail pages: published listings are visible to everyone. */
     public function view(?User $user, Property $property): bool
     {
         return true;
+    }
+
+    /**
+     * Private owner view (/my/properties/{id}), which exposes drafts, rejected
+     * listings and edit-form internals — so it needs the same ownership test
+     * as update(), not the permissive public one.
+     */
+    public function manage(User $user, Property $property): bool
+    {
+        return $this->update($user, $property);
     }
 
     public function create(User $user): bool

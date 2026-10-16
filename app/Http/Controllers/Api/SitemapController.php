@@ -11,10 +11,22 @@ use App\Models\Blog;
 use App\Models\Project;
 use App\Models\Property;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 
 class SitemapController extends Controller
 {
     public function __invoke(): Response
+    {
+        // Crawlers hit this repeatedly and it scans three whole tables, so the
+        // rendered XML is cached for an hour rather than rebuilt per request.
+        $xml = Cache::remember('sitemap_xml', 3600, fn () => $this->build());
+
+        return response($xml, 200, [
+            'Content-Type' => 'application/xml',
+        ]);
+    }
+
+    private function build(): string
     {
         $frontendUrl = config('app.frontend_url', 'https://sarzameen.com');
 
@@ -69,9 +81,7 @@ class SitemapController extends Controller
 
         $xml .= '</urlset>';
 
-        return response($xml, 200, [
-            'Content-Type' => 'application/xml',
-        ]);
+        return $xml;
     }
 
     private function urlEntry(string $loc, string $lastmod, string $changefreq, string $priority): string

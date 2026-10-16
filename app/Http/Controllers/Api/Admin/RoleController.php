@@ -78,6 +78,15 @@ class RoleController extends Controller
             ], 422);
         }
 
+        // Role management stays admin-only: granting it to another role would
+        // let that role edit every role, including its own, escalating freely.
+        if ($role->name !== 'admin' && in_array('roles.manage', $validated['permissions'], true)) {
+            return response()->json([
+                'message' => 'Only the admin role can hold "roles.manage".',
+                'errors' => ['permissions' => ['Only the admin role can hold "roles.manage".']],
+            ], 422);
+        }
+
         $before = $role->permissions->pluck('name')->sort()->values()->all();
 
         $role->syncPermissions($validated['permissions']);
