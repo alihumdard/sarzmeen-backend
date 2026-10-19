@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PropertyTypeRequest;
 use App\Http\Resources\PropertyTypeResource;
 use App\Models\Category;
+use App\Models\Property;
 use App\Models\PropertyType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -64,8 +65,25 @@ class PropertyTypeController extends Controller
         return new PropertyTypeResource($propertyType);
     }
 
+    /**
+     * `properties.property_type_id` has no cascade, so the database would reject
+     * this with a raw constraint error (a 500 the admin cannot act on). Count
+     * first and return the reason instead.
+     */
     public function destroy(PropertyType $propertyType): JsonResponse
     {
+        $propertyCount = Property::where('property_type_id', $propertyType->id)->count();
+
+        if ($propertyCount > 0) {
+            $noun = $propertyCount === 1 ? 'listing uses' : 'listings use';
+
+            return response()->json([
+                'message' => 'This property type cannot be deleted because '
+                    .$propertyCount.' '.$noun.' it. Reassign those listings first.',
+                'blocked_by' => ['properties' => $propertyCount],
+            ], 422);
+        }
+
         $propertyType->delete();
         Cache::forget('taxonomy_property_types');
 

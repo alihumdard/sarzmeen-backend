@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProjectCategoryRequest;
 use App\Http\Resources\ProjectCategoryResource;
+use App\Models\Project;
 use App\Models\ProjectCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -51,8 +52,24 @@ class ProjectCategoryController extends Controller
         return new ProjectCategoryResource($projectCategory);
     }
 
+    /**
+     * `projects.project_category_id` has no cascade, so the database would
+     * reject this with a raw constraint error. Count first and say why.
+     */
     public function destroy(ProjectCategory $projectCategory): JsonResponse
     {
+        $projectCount = Project::where('project_category_id', $projectCategory->id)->count();
+
+        if ($projectCount > 0) {
+            $noun = $projectCount === 1 ? 'project uses' : 'projects use';
+
+            return response()->json([
+                'message' => 'This category cannot be deleted because '
+                    .$projectCount.' '.$noun.' it. Reassign those projects first.',
+                'blocked_by' => ['projects' => $projectCount],
+            ], 422);
+        }
+
         $projectCategory->delete();
         Cache::forget('taxonomy_project_categories');
 

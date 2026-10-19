@@ -18,6 +18,8 @@ class CategoryResource extends JsonResource
             'description' => $this->description,
             'parent' => $this->parent?->slug,
             'propertyCount' => $this->whenCounted('properties', fn () => $this->properties_count, 0),
+            // Drives the delete dialog's warning: these are cascade-deleted.
+            'typeCount' => $this->whenCounted('propertyTypes', fn () => $this->property_types_count, 0),
             'status' => $this->status->value,
             'featured' => $this->featured,
             'createdAt' => $this->created_at->toISOString(),
