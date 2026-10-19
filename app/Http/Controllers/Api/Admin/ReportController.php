@@ -118,17 +118,30 @@ class ReportController extends Controller
     {
         return response()->streamDownload(function () use ($headers, $query, $rowMapper) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, $headers);
 
-            $query->chunk(500, function ($records) use ($handle, $rowMapper) {
+            /*
+             * Excel on Windows needs two things a plain fputcsv does not give
+             * it: a UTF-8 BOM, without which it reads the file as ANSI and
+             * warns that the format does not match the extension, and CRLF
+             * line endings per RFC 4180.
+             */
+            fwrite($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            $writeRow = function (array $row) use ($handle): void {
+                fputcsv($handle, $row, ',', '"', '', "\r\n");
+            };
+
+            $writeRow($headers);
+
+            $query->chunk(500, function ($records) use ($writeRow, $rowMapper) {
                 foreach ($records as $record) {
-                    fputcsv($handle, $rowMapper($record));
+                    $writeRow($rowMapper($record));
                 }
             });
 
             fclose($handle);
         }, $filename, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 }
