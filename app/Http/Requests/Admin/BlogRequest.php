@@ -15,6 +15,13 @@ class BlogRequest extends FormRequest
         return true;
     }
 
+    public function messages(): array
+    {
+        return [
+            'slug.regex' => 'The permalink may only contain lowercase letters, numbers and hyphens.',
+        ];
+    }
+
     public function rules(): array
     {
         $blogId = $this->route('blog')?->id;
@@ -25,6 +32,9 @@ class BlogRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
+                // Only uniqueness was checked, so a slug with spaces or
+                // capitals could be saved and then never resolve as a URL.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('blogs', 'slug')->ignore($blogId),
             ],
             'excerpt' => ['required', 'string', 'max:500'],
