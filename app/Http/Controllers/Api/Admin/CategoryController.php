@@ -19,7 +19,7 @@ class CategoryController extends Controller
     {
         $categories = Cache::remember('taxonomy_categories', 300, function () {
             return Category::with('parent')
-                ->withCount('propertyTypes')
+                ->withCount(['propertyTypes', 'properties'])
                 ->orderByDesc('featured')
                 ->orderBy('name')
                 ->get();

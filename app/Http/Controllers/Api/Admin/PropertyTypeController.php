@@ -20,6 +20,7 @@ class PropertyTypeController extends Controller
     {
         $types = Cache::remember('taxonomy_property_types', 300, function () {
             return PropertyType::with('category')
+                ->withCount('properties')
                 ->orderByDesc('featured')
                 ->orderBy('name')
                 ->get();

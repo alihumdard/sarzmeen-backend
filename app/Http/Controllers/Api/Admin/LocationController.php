@@ -18,6 +18,7 @@ class LocationController extends Controller
     {
         $locations = Cache::remember('taxonomy_locations', 300, function () {
             return Location::with('parent')
+                ->withCount('properties')
                 ->orderBy('type')
                 ->orderBy('name')
                 ->get();

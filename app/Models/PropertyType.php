@@ -8,6 +8,7 @@ use App\Models\Concerns\RecordsActivity;
 use App\Enums\TaxonomyStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PropertyType extends Model
 {
@@ -35,6 +36,11 @@ class PropertyType extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function properties(): HasMany
+    {
+        return $this->hasMany(Property::class);
     }
 
     public function scopeActive($query)

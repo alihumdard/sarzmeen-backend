@@ -9,6 +9,7 @@ use App\Enums\TaxonomyStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Category extends Model
 {
@@ -46,6 +47,15 @@ class Category extends Model
     public function propertyTypes(): HasMany
     {
         return $this->hasMany(PropertyType::class);
+    }
+
+    /**
+     * Listings sit under a property type, not directly under a category, so
+     * the count has to reach through that table.
+     */
+    public function properties(): HasManyThrough
+    {
+        return $this->hasManyThrough(Property::class, PropertyType::class);
     }
 
     public function scopeActive($query)
