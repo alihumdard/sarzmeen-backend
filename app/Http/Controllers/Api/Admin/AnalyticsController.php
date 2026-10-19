@@ -128,11 +128,29 @@ class AnalyticsController extends Controller
         $days = $request->integer('days', 30);
         $days = min($days, 90);
 
-        $data = PropertyViewLog::where('date', '>=', now()->subDays($days))
-            ->select('date', DB::raw('sum(count) as count'))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        // Selected raw: the model casts `date` to a Carbon instance, which
+        // would key the lookup below as a full timestamp rather than Y-m-d.
+        $logged = PropertyViewLog::where('date', '>=', now()->subDays($days)->startOfDay())
+            ->select(DB::raw('date::text as day'), DB::raw('sum(count) as count'))
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('count', 'day');
+
+        /*
+         * Only days with views have rows, so a new site returns a single
+         * point — and one point cannot draw a line. Filling the gaps with
+         * zero gives the chart a continuous series over the window asked
+         * for, which is also the honest shape: no views means zero, not a
+         * missing day.
+         */
+        $data = collect(range($days - 1, 0))->map(function (int $ago) use ($logged) {
+            $date = now()->subDays($ago)->toDateString();
+
+            return [
+                'date' => $date,
+                'count' => (int) ($logged[$date] ?? 0),
+            ];
+        });
 
         return response()->json(['data' => $data]);
     }
