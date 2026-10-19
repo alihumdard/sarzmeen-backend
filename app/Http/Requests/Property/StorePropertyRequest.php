@@ -45,7 +45,7 @@ class StorePropertyRequest extends FormRequest
             'purpose' => ['required', Rule::enum(PropertyPurpose::class)],
             'price' => ['required', 'numeric', 'min:0', 'max:99999999999999'],
             'negotiable' => ['boolean'],
-            'areaValue' => ['required', 'numeric', 'min:0'],
+            'areaValue' => ['required', 'numeric', 'min:0.01'],
             'areaUnit' => ['required', Rule::enum(AreaUnit::class)],
             'beds' => ['nullable', 'integer', 'min:0', 'max:99'],
             'baths' => ['nullable', 'integer', 'min:0', 'max:99'],

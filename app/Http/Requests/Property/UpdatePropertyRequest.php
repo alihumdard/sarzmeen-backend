@@ -30,7 +30,7 @@ class UpdatePropertyRequest extends FormRequest
             'purpose' => ['sometimes', 'required', Rule::enum(PropertyPurpose::class)],
             'price' => ['sometimes', 'required', 'numeric', 'min:0', 'max:99999999999999'],
             'negotiable' => ['boolean'],
-            'areaValue' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'areaValue' => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'areaUnit' => ['sometimes', 'required', Rule::enum(AreaUnit::class)],
             'beds' => ['nullable', 'integer', 'min:0', 'max:99'],
             'baths' => ['nullable', 'integer', 'min:0', 'max:99'],

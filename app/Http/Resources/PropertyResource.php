@@ -42,7 +42,15 @@ class PropertyResource extends JsonResource
                 'name' => $this->agency->name,
                 'slug' => $this->agency->slug,
             ]),
-            'description' => $this->when($this->description, $this->description),
+            /*
+             * Listing cards show this as plain text, so tags have to go here —
+             * otherwise an editor-written description renders as a literal
+             * "<p>Well-maintained..." on the card.
+             */
+            'description' => $this->when(
+                $this->description,
+                fn () => trim(html_entity_decode(strip_tags($this->description))),
+            ),
             'features' => $this->whenLoaded('features', fn () => $this->features->pluck('name')->all()),
             'listedAgo' => $this->published_at?->diffForHumans(),
             'verified' => $this->when($this->verified, true),
