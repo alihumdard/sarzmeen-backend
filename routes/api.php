@@ -48,6 +48,8 @@ use App\Http\Controllers\Api\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Api\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Api\Admin\BlogCategoryController as AdminBlogCategoryController;
+use App\Http\Controllers\Api\Admin\BlogTagController as AdminBlogTagController;
 use App\Http\Controllers\Api\Admin\InquiryController as AdminInquiryController;
 use App\Http\Controllers\Api\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
@@ -238,6 +240,14 @@ Route::middleware('auth:sanctum')->group(function () {
         // Blog CRUD
         Route::apiResource('blogs', AdminBlogController::class)
             ->middleware('permission:blogs.manage');
+
+        // Blog taxonomy CRUD (index is public, under /blog-categories and /blog-tags)
+        Route::middleware('permission:blogs.manage')->group(function () {
+            Route::apiResource('blog-categories', AdminBlogCategoryController::class)
+                ->except('show');
+            Route::apiResource('blog-tags', AdminBlogTagController::class)
+                ->except('show');
+        });
 
         // Inquiry management
         Route::middleware('permission:inquiries.view.own|inquiries.view.any')->group(function () {
