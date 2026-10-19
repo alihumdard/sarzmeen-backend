@@ -123,12 +123,22 @@ class PropertyController extends Controller
             'apartment' => ['studio-apartment', 'two-bed-apartment', 'three-bed-apartment', '3-bed-apartment', 'four-bed-apartment', 'luxury-apartment', 'serviced-apartment', 'hotel-apartment', 'high-rise-penthouse', 'duplex-penthouse'],
         ];
 
+        /*
+         * An unrecognised purpose must not reach the query: passing one
+         * through matched nothing and reported every count as zero, which
+         * reads as "no listings" rather than "bad filter". The listing
+         * endpoint already discards one, so this matches it.
+         */
+        $purpose = $request->filled('purpose')
+            ? PropertyPurpose::tryFrom($request->string('purpose')->toString())
+            : null;
+
         // One grouped query rather than five counts.
         // Qualified, since the join brings a second `status` column into scope.
         $counts = Property::query()
             ->where('properties.status', PropertyStatus::Published)
             ->join('property_types', 'property_types.id', '=', 'properties.property_type_id')
-            ->when($request->filled('purpose'), fn ($q) => $q->where('properties.purpose', $request->input('purpose')))
+            ->when($purpose, fn ($q) => $q->where('properties.purpose', $purpose))
             ->selectRaw('property_types.slug as slug, count(*) as total')
             ->groupBy('property_types.slug')
             ->pluck('total', 'slug');
@@ -143,7 +153,7 @@ class PropertyController extends Controller
             'data' => [
                 'types' => $types,
                 'total' => Property::published()
-                    ->when($request->filled('purpose'), fn ($q) => $q->where('purpose', $request->input('purpose')))
+                    ->when($purpose, fn ($q) => $q->where('purpose', $purpose))
                     ->count(),
             ],
         ]);
