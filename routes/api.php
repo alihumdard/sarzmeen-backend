@@ -64,6 +64,8 @@ Route::get('/locations', [LocationController::class, 'index']);
 // Public property routes
 Route::get('/properties', [PropertyController::class, 'index']);
 Route::get('/properties/compare', ComparisonController::class);
+// Must stay above /properties/{slug}, or "facets" is read as a slug.
+Route::get('/properties/facets', [PropertyController::class, 'facets']);
 Route::get('/properties/{slug}', [PropertyController::class, 'show']);
 
 // Public project routes

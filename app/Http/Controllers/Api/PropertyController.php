@@ -36,7 +36,14 @@ class PropertyController extends Controller
         }
 
         if ($request->filled('type')) {
-            $query->whereHas('propertyType', fn ($q) => $q->where('slug', $request->string('type')->toString()));
+            /*
+             * The sidebar groups several slugs under one label — "House" also
+             * covers upper and lower portions, a farm house and so on — so a
+             * comma-separated list has to match any of them.
+             */
+            $types = array_filter(explode(',', $request->string('type')->toString()));
+
+            $query->whereHas('propertyType', fn ($q) => $q->whereIn('slug', $types));
         }
 
         if ($request->filled('price_min')) {
@@ -95,6 +102,51 @@ class PropertyController extends Controller
         $properties = $query->paginate($request->integer('per_page', 12));
 
         return PropertyResource::collection($properties);
+    }
+
+    /**
+     * Live counts for the listing sidebar.
+     *
+     * These were hardcoded in the frontend (House 5,299 against 9 real
+     * listings), so the sidebar contradicted the result count beside it.
+     *
+     * Each group maps to several type slugs, matching how the sidebar
+     * presents them.
+     */
+    public function facets(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $groups = [
+            'house' => ['house', 'villa', 'townhouse', 'duplex', 'upper-portion', 'lower-portion', 'farm-house'],
+            'plot' => ['residential-plot', 'commercial-plot', 'agricultural-land', 'industrial-land', 'plot-file'],
+            'flat' => ['flat-apartment', 'penthouse', 'room'],
+            'commercial' => ['shop', 'office', 'showroom', 'factory', 'warehouse', 'building', 'commercial-plaza', 'commercial-floor', 'commercial-unit', 'corporate-office', 'high-rise-office', 'high-rise-shop', 'high-rise-showroom', 'restaurant', 'food-court'],
+            'apartment' => ['studio-apartment', 'two-bed-apartment', 'three-bed-apartment', '3-bed-apartment', 'four-bed-apartment', 'luxury-apartment', 'serviced-apartment', 'hotel-apartment', 'high-rise-penthouse', 'duplex-penthouse'],
+        ];
+
+        // One grouped query rather than five counts.
+        // Qualified, since the join brings a second `status` column into scope.
+        $counts = Property::query()
+            ->where('properties.status', PropertyStatus::Published)
+            ->join('property_types', 'property_types.id', '=', 'properties.property_type_id')
+            ->when($request->filled('purpose'), fn ($q) => $q->where('properties.purpose', $request->input('purpose')))
+            ->selectRaw('property_types.slug as slug, count(*) as total')
+            ->groupBy('property_types.slug')
+            ->pluck('total', 'slug');
+
+        $types = [];
+
+        foreach ($groups as $key => $slugs) {
+            $types[$key] = collect($slugs)->sum(fn ($slug) => (int) ($counts[$slug] ?? 0));
+        }
+
+        return response()->json([
+            'data' => [
+                'types' => $types,
+                'total' => Property::published()
+                    ->when($request->filled('purpose'), fn ($q) => $q->where('purpose', $request->input('purpose')))
+                    ->count(),
+            ],
+        ]);
     }
 
     public function show(string $slug): PropertyDetailResource
