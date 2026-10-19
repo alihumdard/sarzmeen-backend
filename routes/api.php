@@ -205,6 +205,9 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('permission:users.view');
         Route::patch('/accounts/{user}/status', [AccountController::class, 'updateStatus'])
             ->middleware('permission:users.approve');
+        // Creating an account is an approval in itself, so it sits with that.
+        Route::post('/accounts', [AccountController::class, 'store'])
+            ->middleware('permission:users.approve');
         Route::middleware('permission:roles.manage')->group(function () {
             Route::get('/roles', [RoleController::class, 'index']);
             Route::get('/roles/{role}', [RoleController::class, 'show']);

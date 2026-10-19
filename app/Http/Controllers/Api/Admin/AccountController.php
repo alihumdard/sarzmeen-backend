@@ -8,12 +8,29 @@ use App\Actions\Auth\ApproveAccount;
 use App\Enums\AccountStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AccountUserResource;
+use App\Actions\Admin\CreateUserAccount;
+use App\Http\Requests\Admin\CreateUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AccountController extends Controller
 {
+    /**
+     * Creates an account directly, rather than asking the person to register
+     * and then approving them. An agency can already add its own agents; this
+     * gives an admin the same ability across every role.
+     */
+    public function store(CreateUserRequest $request, CreateUserAccount $action): JsonResponse
+    {
+        $user = $action->execute($request->validated());
+
+        return response()->json([
+            'data' => new UserResource($user),
+        ], 201);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $query = User::with(['roles', 'agency', 'agent.agency'])
