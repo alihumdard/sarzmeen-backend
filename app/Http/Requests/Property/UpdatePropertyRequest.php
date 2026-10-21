@@ -47,7 +47,7 @@ class UpdatePropertyRequest extends FormRequest
             'nearbyPlaces.*.distance' => ['required', 'string', 'max:50'],
             'nearbyPlaces.*.kind' => ['required', 'in:park,road,airport,mall'],
             'images' => ['nullable', 'array', 'max:20'],
-            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'images.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:2048', 'dimensions:min_width=400,min_height=400'],
             'status' => ['sometimes', 'in:draft,pending'],
             'metaTitle' => ['nullable', 'string', 'max:70'],
             'metaDescription' => ['nullable', 'string', 'max:160'],

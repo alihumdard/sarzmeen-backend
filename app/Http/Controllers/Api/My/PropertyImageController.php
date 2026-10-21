@@ -24,7 +24,7 @@ class PropertyImageController extends Controller
 
         $request->validate([
             'images' => 'required|array|max:20',
-            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=400,min_height=400',
         ]);
 
         $maxSort = $property->images()->max('sort_order') ?? -1;
