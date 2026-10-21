@@ -25,6 +25,15 @@ class PropertyImageController extends Controller
         $request->validate([
             'images' => 'required|array|max:20',
             'images.*' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048|dimensions:min_width=400,min_height=400',
+        ], [
+            /*
+             * A file over PHP's own upload ceiling never reaches Laravel, so
+             * it surfaces as `uploaded` rather than `max` — both say the same
+             * thing to the person uploading.
+             */
+            'images.*.uploaded' => 'Each photo must be 2MB or smaller.',
+            'images.*.max' => 'Each photo must be 2MB or smaller.',
+            'images.*.dimensions' => 'Each photo must be at least 400x400 pixels.',
         ]);
 
         $maxSort = $property->images()->max('sort_order') ?? -1;

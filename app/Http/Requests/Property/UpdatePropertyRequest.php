@@ -18,6 +18,15 @@ class UpdatePropertyRequest extends FormRequest
         return $this->user()->can('update', $this->route('property'));
     }
 
+    public function messages(): array
+    {
+        return [
+            'images.*.uploaded' => 'Each photo must be 2MB or smaller.',
+            'images.*.max' => 'Each photo must be 2MB or smaller.',
+            'images.*.dimensions' => 'Each photo must be at least 400x400 pixels.',
+        ];
+    }
+
     public function rules(): array
     {
         return [

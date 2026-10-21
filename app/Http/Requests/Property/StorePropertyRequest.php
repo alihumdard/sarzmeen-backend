@@ -33,6 +33,15 @@ class StorePropertyRequest extends FormRequest
         }
     }
 
+    public function messages(): array
+    {
+        return [
+            'images.*.uploaded' => 'Each photo must be 2MB or smaller.',
+            'images.*.max' => 'Each photo must be 2MB or smaller.',
+            'images.*.dimensions' => 'Each photo must be at least 400x400 pixels.',
+        ];
+    }
+
     public function rules(): array
     {
         return [
