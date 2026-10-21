@@ -72,6 +72,9 @@ class PropertyDetailResource extends JsonResource
             'propertyStatus' => $conditionLabel,
             'furnishing' => $furnishingLabel,
             'propertyType' => $this->propertyType->name,
+            // The detail page picks which spec fields to show from this; its
+            // absence left every type-specific section blank.
+            'typeSlug' => $this->propertyType->slug,
             'listedBy' => ucfirst($this->listed_by->value),
             'listedOn' => $this->published_at?->toISOString(),
             'listedAgo' => $this->published_at?->diffForHumans(),
