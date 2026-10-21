@@ -37,7 +37,7 @@ class PropertyDetailResource extends JsonResource
         // Descriptions are sanitised HTML from the rich-text editor. Keep the
         // plain-text split for components that still expect paragraphs.
         $plain = $this->description
-            ? trim(html_entity_decode(strip_tags(preg_replace('#<(p|br|/h2|/h3|/li)[^>]*>#i', "\n", $this->description) ?? '')))
+            ? trim(html_entity_decode(strip_tags(preg_replace('#</?(p|br|h[1-6]|li|div|blockquote)[^>]*>#i', "\n", $this->description) ?? '')))
             : '';
 
         $descriptionParagraphs = $plain !== ''

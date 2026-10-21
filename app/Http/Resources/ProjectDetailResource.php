@@ -35,8 +35,18 @@ class ProjectDetailResource extends JsonResource
             $cityName = $loc?->name ?? $this->location->name;
         }
 
-        $descriptionParagraphs = $this->description
-            ? array_values(array_filter(explode("\n", $this->description)))
+        /*
+         * The description now comes from the rich-text editor, which produces
+         * HTML with no newlines - splitting on a newline left the whole thing
+         * as one paragraph of visible tags. Block-ending tags become line
+         * breaks first, matching how a property description is handled.
+         */
+        $plain = $this->description
+            ? trim(html_entity_decode(strip_tags(preg_replace('#</?(p|br|h[1-6]|li|div|blockquote)[^>]*>#i', "\n", $this->description) ?? '')))
+            : '';
+
+        $descriptionParagraphs = $plain !== ''
+            ? array_values(array_filter(array_map('trim', explode("\n", $plain))))
             : [];
 
         return [
