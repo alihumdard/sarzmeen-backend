@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\PropertyController;
 use App\Http\Controllers\Api\PropertySchemaController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\BlogController;
+use App\Http\Controllers\Api\VideoController as PublicVideoController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SitemapController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\Api\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Api\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController as AdminBlogCategoryController;
 use App\Http\Controllers\Api\Admin\BlogTagController as AdminBlogTagController;
 use App\Http\Controllers\Api\Admin\InquiryController as AdminInquiryController;
@@ -79,6 +81,12 @@ Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogController::class, 'show']);
 Route::get('/blog-categories', [BlogController::class, 'categories']);
 Route::get('/blog-tags', [BlogController::class, 'tags']);
+
+// Public video library
+Route::get('/videos', [PublicVideoController::class, 'index']);
+// Above /videos/{slug}, or "related" is read as a slug.
+Route::get('/videos/{slug}/related', [PublicVideoController::class, 'related']);
+Route::get('/videos/{slug}', [PublicVideoController::class, 'show']);
 
 // Public agents & agencies
 Route::get('/agents', [PublicAgentController::class, 'index']);
@@ -242,6 +250,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Blog CRUD
         Route::apiResource('blogs', AdminBlogController::class)
+            ->middleware('permission:blogs.manage');
+
+        // Videos are content, so they sit with the blog permission.
+        Route::apiResource('videos', AdminVideoController::class)
             ->middleware('permission:blogs.manage');
 
         // Blog taxonomy CRUD (index is public, under /blog-categories and /blog-tags)
