@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Api\Admin\BannerUploadController;
 use App\Http\Controllers\Api\Admin\AccountController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\LocationController;
@@ -310,6 +311,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Site settings
         Route::middleware('permission:settings.manage')->group(function () {
+            // Banner/section images for the Homepage CMS.
+            Route::post('/banners', [BannerUploadController::class, 'store'])
+                ->middleware('throttle:uploads');
+
             Route::get('/settings/{group}', [SiteSettingController::class, 'index']);
             Route::get('/settings/{group}/{key}', [SiteSettingController::class, 'show']);
             Route::put('/settings/{group}', [SiteSettingController::class, 'update']);
