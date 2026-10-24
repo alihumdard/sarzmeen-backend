@@ -242,6 +242,8 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('permission:properties.edit.own|properties.edit.any');
         Route::patch('/properties/{property}/status', [AdminPropertyController::class, 'updateStatus'])
             ->middleware('permission:properties.publish');
+        Route::patch('/properties/{property}/featured', [AdminPropertyController::class, 'updateFeatured'])
+            ->middleware('permission:properties.publish');
 
         // Project CRUD
         Route::middleware('permission:projects.edit.any')->group(function () {

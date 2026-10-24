@@ -58,6 +58,28 @@ class PropertyController extends Controller
         return PropertyResource::collection($query->paginate(15));
     }
 
+    /**
+     * Marks a listing as featured, which is what puts it in the homepage
+     * block. Guarded by properties.publish, so only an admin decides what
+     * the site leads with — not the agent who listed it.
+     */
+    public function updateFeatured(Request $request, Property $property): JsonResponse
+    {
+        $validated = $request->validate([
+            'featured' => ['required', 'boolean'],
+        ]);
+
+        $property->featured = $validated['featured'];
+        $property->save();
+
+        return response()->json([
+            'data' => [
+                'id' => (string) $property->id,
+                'featured' => $property->featured,
+            ],
+        ]);
+    }
+
     public function updateStatus(Request $request, Property $property): JsonResponse
     {
         $validated = $request->validate([
