@@ -22,6 +22,15 @@ class BlogController extends Controller
         $query = Blog::published()
             ->with(['category', 'author']);
 
+        /*
+         * The admin's "Featured" checkbox promises the post is pinned to the
+         * top of the homepage section, so the homepage asks for that order.
+         * The blog listing keeps its own sort, where the reader chose it.
+         */
+        if ($request->boolean('featured_first')) {
+            $query->orderByDesc('featured');
+        }
+
         match ($request->string('sort')->toString()) {
             'oldest' => $query->oldest('published_at'),
             'popular' => $query->orderByDesc('read_time')->latest('published_at'),
