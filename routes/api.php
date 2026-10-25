@@ -234,6 +234,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('categories', CategoryController::class)->except('index');
             Route::apiResource('property-types', PropertyTypeController::class)->except('index');
             Route::apiResource('project-categories', ProjectCategoryController::class)->except('index');
+        });
+
+        // Locations are managed separately from the property taxonomy, so the
+        // permission can be granted on its own.
+        Route::middleware('permission:locations.manage')->group(function () {
             Route::apiResource('locations', LocationController::class)->except('index');
         });
 

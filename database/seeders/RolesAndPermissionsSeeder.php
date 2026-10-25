@@ -24,7 +24,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'agencies.manage.own', 'agencies.manage.any',
             'agents.invite', 'agents.manage.own', 'agents.manage.any',
             'users.view', 'users.approve', 'users.suspend',
-            'categories.manage', 'blogs.manage', 'blogs.manage.any', 'testimonials.manage',
+            'categories.manage', 'locations.manage',
+            'blogs.manage', 'blogs.manage.any', 'testimonials.manage',
             'faqs.manage', 'inquiries.view.own', 'inquiries.view.any',
             'settings.manage', 'roles.manage',
         ];
