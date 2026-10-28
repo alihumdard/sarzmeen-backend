@@ -23,9 +23,9 @@ class AvatarController extends Controller
 
         $user = $request->user();
 
-        if ($user->avatar) {
-            $this->imageService->delete($user->avatar);
-        }
+        // Upload first: deleting first meant a failed upload lost the
+        // picture and left the record pointing at a missing file.
+        $previous = $user->avatar;
 
         $path = $this->imageService->upload(
             $request->file('avatar'),
@@ -35,6 +35,10 @@ class AvatarController extends Controller
         );
 
         $user->update(['avatar' => $path]);
+
+        if ($previous && $previous !== $path) {
+            $this->imageService->delete($previous);
+        }
 
         return response()->json([
             'data' => [

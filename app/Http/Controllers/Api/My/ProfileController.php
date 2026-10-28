@@ -41,14 +41,22 @@ class ProfileController extends Controller
         }
 
         if ($request->hasFile('avatarFile')) {
-            if ($user->avatar) {
-                $this->imageService->delete($user->avatar);
-            }
+            /*
+             * Upload before removing the old file. Deleting first meant a
+             * failed upload took the picture with it and left the record
+             * pointing at a file that was no longer there.
+             */
+            $previous = $user->avatar;
+
             $user->avatar = $this->imageService->upload(
                 $request->file('avatarFile'),
                 'avatars',
                 400,
             );
+
+            if ($previous && $previous !== $user->avatar) {
+                $this->imageService->delete($previous);
+            }
         }
 
         $user->fill([
