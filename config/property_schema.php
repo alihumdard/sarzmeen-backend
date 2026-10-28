@@ -108,7 +108,7 @@ return [
             'fields' => [
                 ['key' => 'buildingName', 'label' => 'Building Name', 'kind' => 'text', 'max' => 255],
                 ['key' => 'towerBlock', 'label' => 'Tower / Block', 'kind' => 'text', 'max' => 100],
-                ['key' => 'unitNumber', 'label' => 'Unit / Apartment Number', 'kind' => 'text', 'max' => 50],
+                ['key' => 'unitNumber', 'label' => 'Unit Number', 'kind' => 'text', 'max' => 50],
                 ['key' => 'floorNumber', 'label' => 'Floor Number', 'kind' => 'int', 'min' => -10, 'max' => 200],
                 ['key' => 'totalBuildingFloors', 'label' => 'Total Building Floors', 'kind' => 'int', 'max' => 200],
                 ['key' => 'cornerUnit', 'label' => 'Corner Unit', 'kind' => 'bool'],
