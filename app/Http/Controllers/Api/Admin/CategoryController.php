@@ -54,9 +54,21 @@ class CategoryController extends Controller
             ->setStatusCode(201);
     }
 
+    /**
+     * The four categories config/property_schema.php is written around.
+     * Renaming or removing one leaves every type under it without a field
+     * set, so they are fixed; new categories alongside them are fine.
+     */
+    private const CORE = ['homes', 'plots', 'commercial', 'high-rise'];
+
     public function update(CategoryRequest $request, Category $category): CategoryResource
     {
         $data = $request->validated();
+
+        if (in_array($category->slug, self::CORE, true)) {
+            // The name may be reworded; what the schema keys off may not.
+            unset($data['slug'], $data['parent']);
+        }
 
         if (array_key_exists('parent', $data)) {
             $data['parent_id'] = $data['parent']
@@ -84,6 +96,12 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category): JsonResponse
     {
+        if (in_array($category->slug, self::CORE, true)) {
+            return response()->json([
+                'message' => "\"{$category->name}\" is one of the four main categories and cannot be deleted. Its property types can still be added to or removed.",
+            ], 422);
+        }
+
         $typeCount = $category->propertyTypes()->count();
         $childCount = $category->children()->count();
 
