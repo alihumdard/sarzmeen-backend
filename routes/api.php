@@ -130,6 +130,11 @@ Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword
 
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']);
 
+// The link sent by the verification mail — signed, and reachable while logged out.
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verifyLink'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify.link');
+
 // Authenticated routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', MeController::class);
@@ -145,7 +150,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->name('verification.send');
 
     // Owner-scoped routes (any authenticated user)
-    Route::prefix('my')->group(function () {
+    Route::prefix('my')->middleware('approved')->group(function () {
         Route::get('/stats', MyStatsController::class);
         Route::post('/avatar', [AvatarController::class, 'store'])->middleware('throttle:uploads');
         Route::delete('/avatar', [AvatarController::class, 'destroy']);
