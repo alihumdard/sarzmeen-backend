@@ -89,6 +89,7 @@ class PropertyDetailResource extends JsonResource
                 'kind' => $p->kind->value,
             ])->all()),
             'specs' => $this->specs ?: new \stdClass(),
+            'customFields' => $this->custom_fields ?: [],
             'agent' => new PropertyAgentResource($this->whenLoaded('owner')),
             'metaTitle' => $this->meta_title ?? $this->title,
             'metaDescription' => $this->meta_description ?? mb_substr(strip_tags($this->description), 0, 160),

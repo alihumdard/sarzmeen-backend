@@ -55,6 +55,7 @@ class CreateProperty
                 'meta_title' => $data['metaTitle'] ?? null,
                 'meta_description' => $data['metaDescription'] ?? null,
                 'specs' => $data['specs'] ?? [],
+                'custom_fields' => $data['customFields'] ?? [],
             ]);
 
             if (! empty($data['features'])) {

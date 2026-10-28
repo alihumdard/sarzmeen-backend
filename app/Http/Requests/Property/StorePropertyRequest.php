@@ -75,6 +75,11 @@ class StorePropertyRequest extends FormRequest
             'metaTitle' => ['nullable', 'string', 'max:70'],
             'metaDescription' => ['nullable', 'string', 'max:160'],
             'specs' => ['nullable', 'array'],
+            // Fields the lister defines themselves, beyond the schema.
+            'customFields' => ['nullable', 'array', 'max:20'],
+            'customFields.*.label' => ['required', 'string', 'max:60'],
+            'customFields.*.kind' => ['required', 'in:text,number,checkbox'],
+            'customFields.*.value' => ['nullable', 'string', 'max:120'],
         ] + PropertySpecs::rules($this->integer('propertyTypeId'));
     }
 
@@ -90,5 +95,38 @@ class StorePropertyRequest extends FormRequest
             $this->input('specs', []) ?? [],
             $this->integer('propertyTypeId'),
         );
+    }
+
+    /**
+     * Custom fields, trimmed and stripped of rows with no label, so an
+     * empty row left on the form does not reach the listing.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function customFields(): array
+    {
+        $rows = [];
+
+        foreach ($this->input('customFields', []) ?? [] as $row) {
+            $label = trim((string) ($row['label'] ?? ''));
+
+            if ($label === '') {
+                continue;
+            }
+
+            $kind = $row['kind'] ?? 'text';
+            $value = $row['value'] ?? '';
+
+            $rows[] = [
+                'label' => $label,
+                'kind' => $kind,
+                // A checkbox is on or off; the others keep what was typed.
+                'value' => $kind === 'checkbox'
+                    ? filter_var($value, FILTER_VALIDATE_BOOLEAN)
+                    : trim((string) $value),
+            ];
+        }
+
+        return $rows;
     }
 }

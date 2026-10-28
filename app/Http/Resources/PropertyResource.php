@@ -21,6 +21,8 @@ class PropertyResource extends JsonResource
         return [
             'id' => (string) $this->id,
             'slug' => $this->slug,
+            // The serial the admin and the lister quote to each other.
+            'reference' => $this->reference,
             'title' => $this->title,
             'location' => $this->full_location,
             'project' => $this->when($this->project_id, fn () => $this->project_id),
@@ -35,6 +37,7 @@ class PropertyResource extends JsonResource
             'type' => $this->whenLoaded('propertyType', fn () => $this->propertyType->name, ''),
             'typeSlug' => $this->whenLoaded('propertyType', fn () => $this->propertyType->slug, ''),
             'specs' => $this->specs ?: new \stdClass(),
+            'customFields' => $this->custom_fields ?: [],
             'featured' => $this->featured,
             'agent' => new PropertyAgentResource($this->whenLoaded('owner')),
             'agency' => $this->whenLoaded('agency', fn () => [

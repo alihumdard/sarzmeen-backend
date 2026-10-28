@@ -64,6 +64,7 @@ class Property extends Model
         'meta_title',
         'meta_description',
         'specs',
+        'custom_fields',
     ];
 
     protected function casts(): array
@@ -84,6 +85,7 @@ class Property extends Model
             'published_at' => 'datetime',
             'expires_at' => 'datetime',
             'specs' => 'array',
+            'custom_fields' => 'array',
         ];
     }
 

@@ -74,6 +74,7 @@ class PropertyController extends Controller
                 'location' => $property->full_location,
                 'fullLocation' => $property->full_location,
                 'specs' => $property->specs ?: new \stdClass(),
+                'customFields' => $property->custom_fields ?: [],
                 'features' => $property->features->pluck('name')->all(),
                 'images' => $property->images->map(fn ($img) => [
                     'id' => $img->id,
@@ -90,7 +91,10 @@ class PropertyController extends Controller
     {
         $property = $action->execute(
             $request->user(),
-            ['specs' => $request->specs()] + $request->validated(),
+            [
+                'specs' => $request->specs(),
+                'customFields' => $request->customFields(),
+            ] + $request->validated(),
         );
 
         return (new PropertyResource($property))

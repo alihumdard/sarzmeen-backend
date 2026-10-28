@@ -34,6 +34,7 @@ class UpdateProperty
                 'status' => 'status',
                 'metaTitle' => 'meta_title',
                 'metaDescription' => 'meta_description',
+                'customFields' => 'custom_fields',
             ];
 
             $updates = [];
