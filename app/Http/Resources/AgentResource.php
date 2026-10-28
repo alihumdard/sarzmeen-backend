@@ -33,11 +33,19 @@ class AgentResource extends JsonResource
             'languages' => $this->whenLoaded('languages', fn () =>
                 $this->languages->pluck('name')->all()
             ),
-            'agency' => $this->when($this->agency_id, fn () => [
-                'id' => (string) $this->agency_id,
-                'name' => $this->whenLoaded('agency', fn () => $this->agency->name),
-                'slug' => $this->whenLoaded('agency', fn () => $this->agency->slug),
-            ]),
+            /*
+             * Only when the agency is really there. Keying off agency_id
+             * alone shipped a nameless card whenever the row behind it had
+             * gone, which read as "View Agency Profile" with no agency.
+             */
+            'agency' => $this->when(
+                $this->relationLoaded('agency') && $this->agency !== null,
+                fn () => [
+                    'id' => (string) $this->agency_id,
+                    'name' => $this->agency->name,
+                    'slug' => $this->agency->slug,
+                ],
+            ),
         ];
     }
 }
