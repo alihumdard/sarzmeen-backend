@@ -65,12 +65,18 @@ class PropertyController extends Controller
                 'furnishing' => $property->furnishing?->value,
                 'propertyCondition' => $property->property_condition?->value,
                 'status' => $property->status->value,
-                'categoryId' => $property->propertyType?->category_id,
-                'propertyTypeId' => $property->property_type_id,
+                /*
+                 * The lists these are matched against serve their ids as
+                 * strings, and the pickers compare strictly, so an int here
+                 * never matches: the location field came up blank on a
+                 * property that had one.
+                 */
+                'categoryId' => $this->idOrNull($property->propertyType?->category_id),
+                'propertyTypeId' => $this->idOrNull($property->property_type_id),
                 'propertyType' => $property->propertyType?->name,
                 'typeSlug' => $property->propertyType?->slug,
                 'category' => $property->propertyType?->category?->name,
-                'locationId' => $property->location_id,
+                'locationId' => $this->idOrNull($property->location_id),
                 'location' => $property->full_location,
                 'fullLocation' => $property->full_location,
                 'specs' => $property->specs ?: new \stdClass(),
@@ -85,6 +91,12 @@ class PropertyController extends Controller
                 'metaDescription' => $property->meta_description,
             ],
         ]);
+    }
+
+    /** Ids go out as strings, matching every list the pickers read. */
+    private function idOrNull(int|string|null $id): ?string
+    {
+        return $id === null ? null : (string) $id;
     }
 
     public function store(StorePropertyRequest $request, CreateProperty $action): JsonResponse
