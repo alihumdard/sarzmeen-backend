@@ -34,18 +34,23 @@ class PasswordResetController extends Controller
 
     public function resetPassword(Request $request): JsonResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        /*
+         * The validated values are taken from validate()'s return, not from
+         * $request->validated() — that method belongs to a FormRequest, and
+         * calling it on a plain Request threw inside the callback, so every
+         * reset came back as a server error.
+         */
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user) use ($request) {
-                $user->forceFill([
-                    'password' => $request->validated('password'),
-                ])->save();
+            function ($user) use ($data) {
+                // The model casts password as 'hashed', so this is hashed on save.
+                $user->forceFill(['password' => $data['password']])->save();
             }
         );
 
