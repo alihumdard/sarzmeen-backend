@@ -29,10 +29,9 @@ return [
      * and stays the one the mail links are built from.
      */
     'allowed_origins' => array_values(array_unique(array_filter(array_merge(
-        array_map('trim', explode(',', (string) env(
-            'CORS_ALLOWED_ORIGINS',
-            (string) env('FRONTEND_URL', 'http://localhost:3000'),
-        ))),
+        array_map('trim', explode(',', trim((string) env('CORS_ALLOWED_ORIGINS')) !== ''
+            ? (string) env('CORS_ALLOWED_ORIGINS')
+            : (string) env('FRONTEND_URL', 'http://localhost:3000'))),
         ['http://127.0.0.1:3000'],
     )))),
 
