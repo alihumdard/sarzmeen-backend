@@ -24,23 +24,32 @@ class BannerUploadController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        /*
+         * A banner spans the page, so it has a size floor. An image dropped
+         * into a blog post does not — a small diagram or logo is a perfectly
+         * good illustration, and holding it to the banner rule meant the
+         * editor simply refused it.
+         */
+        $inline = $request->input('context') === 'inline';
+
+        $rules = ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'];
+
+        if (! $inline) {
+            $rules[] = 'dimensions:min_width=400,min_height=400';
+        }
+
         $request->validate([
-            'image' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:2048',
-                'dimensions:min_width=400,min_height=400',
-            ],
+            'context' => ['nullable', 'in:banner,inline'],
+            'image' => $rules,
         ], [
-            'image.max' => 'The banner must be 2MB or smaller.',
+            'image.max' => 'The image must be 2MB or smaller.',
             'image.dimensions' => 'The banner must be at least 400x400 pixels.',
         ]);
 
         // Wide enough for a full-bleed banner without storing a camera original.
         $path = $this->imageService->upload(
             $request->file('image'),
-            'banners',
+            $inline ? 'blog-content' : 'banners',
             1920,
             86,
         );
