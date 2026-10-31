@@ -21,7 +21,20 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000'), 'http://127.0.0.1:3000'],
+    /*
+     * The site can be reached under more than one hostname — a bare IP and a
+     * friendlier name for the same staging box, for instance — and only the
+     * origin listed here can call the API. CORS_ALLOWED_ORIGINS takes a
+     * comma-separated list for those cases; FRONTEND_URL alone still works,
+     * and stays the one the mail links are built from.
+     */
+    'allowed_origins' => array_values(array_unique(array_filter(array_merge(
+        array_map('trim', explode(',', (string) env(
+            'CORS_ALLOWED_ORIGINS',
+            (string) env('FRONTEND_URL', 'http://localhost:3000'),
+        ))),
+        ['http://127.0.0.1:3000'],
+    )))),
 
     'allowed_origins_patterns' => [],
 
