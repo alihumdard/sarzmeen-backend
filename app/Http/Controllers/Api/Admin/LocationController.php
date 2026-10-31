@@ -14,17 +14,51 @@ use Illuminate\Support\Facades\Cache;
 
 class LocationController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(): JsonResponse
     {
+        /*
+         * Cached already transformed, not as models. The table runs to
+         * thousands of rows and only the parent's slug is ever needed, so
+         * eager-loading a parent model each time and storing the whole
+         * collection meant every request paid to rebuild and unserialize it
+         * — the endpoint had grown to well over a minute.
+         */
         $locations = Cache::remember('taxonomy_locations', 300, function () {
-            return Location::with('parent')
+            return Location::query()
+                ->leftJoin('locations as parents', 'parents.id', '=', 'locations.parent_id')
                 ->withCount('properties')
-                ->orderBy('type')
-                ->orderBy('name')
-                ->get();
+                ->select([
+                    'locations.id',
+                    'locations.name',
+                    'locations.slug',
+                    'locations.type',
+                    'locations.latitude',
+                    'locations.longitude',
+                    'locations.status',
+                    'locations.featured',
+                    'locations.created_at',
+                    'parents.slug as parent_slug',
+                ])
+                ->orderBy('locations.type')
+                ->orderBy('locations.name')
+                ->get()
+                ->map(fn (Location $location): array => [
+                    'id' => (string) $location->id,
+                    'name' => $location->name,
+                    'slug' => $location->slug,
+                    'type' => $location->type->value,
+                    'parent' => $location->parent_slug,
+                    'latitude' => $location->latitude,
+                    'longitude' => $location->longitude,
+                    'propertyCount' => (int) $location->properties_count,
+                    'status' => $location->status->value,
+                    'featured' => (bool) $location->featured,
+                    'createdAt' => $location->created_at->toISOString(),
+                ])
+                ->all();
         });
 
-        return LocationResource::collection($locations);
+        return response()->json(['data' => $locations]);
     }
 
     public function show(Location $location): LocationResource
