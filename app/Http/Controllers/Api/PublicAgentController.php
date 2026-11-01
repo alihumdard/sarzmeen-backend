@@ -53,7 +53,13 @@ class PublicAgentController extends Controller
             ->where('status', 'published')
             ->count();
 
-        $data = (new AgentResource($agent))->toArray(request());
+/*
+         * resolve(), not toArray(): toArray() hands back the raw array,
+         * MissingValue entries included, and those serialise as {} — an
+         * absent agency arrived as an empty object, which is truthy, so
+         * the page printed "Agent at" with nothing after it.
+         */
+        $data = (new AgentResource($agent))->resolve(request());
         $data['propertiesForSale'] = $propertiesForSale;
         $data['propertiesForRent'] = $propertiesForRent;
 
