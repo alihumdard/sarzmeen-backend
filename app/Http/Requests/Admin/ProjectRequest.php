@@ -24,6 +24,7 @@ class ProjectRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
             'images.*.uploaded' => 'Each photo must be 2MB or smaller.',
             'images.*.max' => 'Each photo must be 2MB or smaller.',
             'images.*.dimensions' => 'Each photo must be at least 400x400 pixels.',
@@ -36,7 +37,15 @@ class ProjectRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('projects')->ignore($projectId)],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                // A slug with spaces or capitals saves fine and then never
+                // resolves as a URL, so the shape is checked, not just uniqueness.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('projects')->ignore($projectId),
+            ],
             'projectCategoryId' => ['required', 'exists:project_categories,id'],
             'developer' => ['required', 'string', 'max:255'],
             'locationId' => ['required', 'exists:locations,id'],

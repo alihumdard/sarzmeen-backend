@@ -20,7 +20,15 @@ class DeveloperRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('developers')->ignore($developerId)],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                // A slug with spaces or capitals saves fine and then never
+                // resolves as a URL, so the shape is checked, not just uniqueness.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('developers')->ignore($developerId),
+            ],
             'description' => ['nullable', 'string', 'max:5000'],
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -29,5 +37,18 @@ class DeveloperRequest extends FormRequest
             'verified' => ['boolean'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ];
+    }
+
+
+    public function messages(): array
+
+    {
+
+        return [
+
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
+
+        ];
+
     }
 }

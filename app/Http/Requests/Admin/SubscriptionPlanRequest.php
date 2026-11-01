@@ -20,7 +20,15 @@ class SubscriptionPlanRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:100'],
-            'slug' => ['required', 'string', 'max:100', Rule::unique('subscription_plans')->ignore($planId)],
+            'slug' => [
+                'required',
+                'string',
+                'max:100',
+                // A slug with spaces or capitals saves fine and then never
+                // resolves as a URL, so the shape is checked, not just uniqueness.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('subscription_plans')->ignore($planId),
+            ],
             'description' => ['nullable', 'string', 'max:1000'],
             'price' => ['required', 'numeric', 'min:0', 'max:9999999'],
             'durationDays' => ['required', 'integer', 'min:1', 'max:365'],
@@ -32,5 +40,18 @@ class SubscriptionPlanRequest extends FormRequest
             'isActive' => ['boolean'],
             'sortOrder' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+
+    public function messages(): array
+
+    {
+
+        return [
+
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
+
+        ];
+
     }
 }

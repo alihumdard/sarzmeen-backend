@@ -22,7 +22,15 @@ class LocationRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('locations')->ignore($locationId)],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                // A slug with spaces or capitals saves fine and then never
+                // resolves as a URL, so the shape is checked, not just uniqueness.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('locations')->ignore($locationId),
+            ],
             'type' => ['required', Rule::enum(LocationType::class)],
             'parent' => ['nullable', 'string', 'exists:locations,slug'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
@@ -30,5 +38,18 @@ class LocationRequest extends FormRequest
             'status' => ['required', Rule::enum(TaxonomyStatus::class)],
             'featured' => ['required', 'boolean'],
         ];
+    }
+
+
+    public function messages(): array
+
+    {
+
+        return [
+
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
+
+        ];
+
     }
 }

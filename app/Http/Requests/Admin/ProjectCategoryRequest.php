@@ -33,10 +33,31 @@ class ProjectCategoryRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('project_categories')->ignore($projectCategoryId)],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                // A slug with spaces or capitals saves fine and then never
+                // resolves as a URL, so the shape is checked, not just uniqueness.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('project_categories')->ignore($projectCategoryId),
+            ],
             'description' => ['nullable', 'string', 'max:1000'],
             'status' => ['required', Rule::enum(TaxonomyStatus::class)],
             'featured' => ['required', 'boolean'],
         ];
+    }
+
+
+    public function messages(): array
+
+    {
+
+        return [
+
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
+
+        ];
+
     }
 }

@@ -33,11 +33,32 @@ class PropertyTypeRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['required', 'string', 'max:255', Rule::unique('property_types')->ignore($propertyTypeId)],
+            'slug' => [
+                'required',
+                'string',
+                'max:255',
+                // A slug with spaces or capitals saves fine and then never
+                // resolves as a URL, so the shape is checked, not just uniqueness.
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                Rule::unique('property_types')->ignore($propertyTypeId),
+            ],
             'description' => ['nullable', 'string', 'max:1000'],
             'category' => ['required', 'string', 'exists:categories,slug'],
             'status' => ['required', Rule::enum(TaxonomyStatus::class)],
             'featured' => ['required', 'boolean'],
         ];
+    }
+
+
+    public function messages(): array
+
+    {
+
+        return [
+
+            'slug.regex' => 'The slug may only contain lowercase letters, numbers and hyphens.',
+
+        ];
+
     }
 }
