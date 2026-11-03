@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Admin\ProjectCategoryController;
 use App\Http\Controllers\Api\Admin\PropertyTypeController;
 use App\Http\Controllers\Api\Admin\RoleController;
 use App\Http\Controllers\Api\Admin\ActivityLogController;
+use App\Http\Controllers\Api\Admin\AdminReportController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\StatsController as AdminStatsController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\MeController;
 use App\Http\Controllers\Api\Auth\PasswordResetController;
 use App\Http\Controllers\Api\Auth\RegisterController;
+use App\Http\Controllers\Api\My\AdminReportController as MyAdminReportController;
 use App\Http\Controllers\Api\My\AvatarController;
 use App\Http\Controllers\Api\My\ConversationController;
 use App\Http\Controllers\Api\My\NotificationController;
@@ -187,6 +189,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/properties/{property}/images/{image}', [PropertyImageController::class, 'destroy']);
         Route::get('/properties/{property}/analytics', PropertyAnalyticsController::class);
 
+        /*
+         * Reports, suggestions and change requests sent to the admin. Open to
+         * any signed-in account: an agent or agency is the expected sender,
+         * but an owner listing their own property has the same need.
+         */
+        Route::get('/reports', [MyAdminReportController::class, 'index']);
+        Route::post('/reports', [MyAdminReportController::class, 'store'])
+            ->middleware('throttle:uploads');
+        Route::get('/reports/{id}', [MyAdminReportController::class, 'show']);
+
         // Payment plans kept from the calculator.
         Route::get('/payment-plans', [SavedPaymentPlanController::class, 'index']);
         Route::post('/payment-plans', [SavedPaymentPlanController::class, 'store']);
@@ -303,6 +315,27 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show']);
             Route::patch('/inquiries/{inquiry}/status', [AdminInquiryController::class, 'updateStatus']);
             Route::delete('/inquiries/{inquiry}', [AdminInquiryController::class, 'destroy']);
+        });
+
+        /*
+         * Reports agents and agencies send in. Grouped with inquiries, which
+         * these most resemble: something arrives, the admin works it through
+         * a status and answers.
+         */
+        Route::middleware('permission:inquiries.view.any')->group(function () {
+            Route::get('/reports', [AdminReportController::class, 'index']);
+            Route::get('/reports/stats', [AdminReportController::class, 'stats']);
+            /*
+             * Numbers only: the CSV exports above live on /reports/properties
+             * and the like, so an unconstrained {report} would shadow any new
+             * named export added after this line.
+             */
+            Route::get('/reports/{report}', [AdminReportController::class, 'show'])
+                ->whereNumber('report');
+            Route::patch('/reports/{report}', [AdminReportController::class, 'update'])
+                ->whereNumber('report');
+            Route::delete('/reports/{report}', [AdminReportController::class, 'destroy'])
+                ->whereNumber('report');
         });
 
         // Testimonial CRUD
