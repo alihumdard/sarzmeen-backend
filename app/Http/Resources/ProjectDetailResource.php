@@ -18,7 +18,18 @@ class ProjectDetailResource extends JsonResource
             ? $this->images->pluck('path')->all()
             : [];
 
-        $images = array_map(fn (string $p) => $imageService->url($p), $rawImages);
+        /*
+         * Each image carries its id and cover flag, not just a URL: the
+         * admin form has to name one image to delete it or make it the
+         * cover, which a bare list of URLs cannot express.
+         */
+        $images = $this->relationLoaded('images')
+            ? $this->images->map(fn ($i) => [
+                'id' => (string) $i->id,
+                'url' => $imageService->url($i->path),
+                'isCover' => (bool) $i->is_cover,
+            ])->all()
+            : [];
 
         $cover = $this->relationLoaded('images')
             ? $imageService->url(

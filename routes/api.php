@@ -48,6 +48,7 @@ use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Api\Admin\ProjectController as AdminProjectController;
+use App\Http\Controllers\Api\Admin\ProjectImageController as AdminProjectImageController;
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
@@ -258,6 +259,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Project CRUD
         Route::middleware('permission:projects.edit.any')->group(function () {
             Route::apiResource('projects', AdminProjectController::class);
+
+            // One stored image at a time; uploading goes through the project.
+            Route::delete('/projects/{project}/images/{image}', [AdminProjectImageController::class, 'destroy']);
+            Route::patch('/projects/{project}/images/{image}/cover', [AdminProjectImageController::class, 'setCover']);
             Route::apiResource('developers', AdminDeveloperController::class);
         });
 
