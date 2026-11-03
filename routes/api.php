@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Api\Admin\SubscriptionPlanController;
 use App\Http\Controllers\Api\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Api\Admin\ProjectImageController as AdminProjectImageController;
+use App\Http\Controllers\Api\Admin\ProjectDocumentController as AdminProjectDocumentController;
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
@@ -263,6 +264,11 @@ Route::middleware('auth:sanctum')->group(function () {
             // One stored image at a time; uploading goes through the project.
             Route::delete('/projects/{project}/images/{image}', [AdminProjectImageController::class, 'destroy']);
             Route::patch('/projects/{project}/images/{image}/cover', [AdminProjectImageController::class, 'setCover']);
+
+            // Documents are named one at a time, so they upload on their own.
+            Route::post('/projects/{project}/documents', [AdminProjectDocumentController::class, 'store'])
+                ->middleware('throttle:uploads');
+            Route::delete('/projects/{project}/documents/{document}', [AdminProjectDocumentController::class, 'destroy']);
             Route::apiResource('developers', AdminDeveloperController::class);
         });
 
