@@ -22,6 +22,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustProxies(at: '*');
 
+        /*
+         * This app is an API with a separate frontend, so there is no `login`
+         * route to send an unauthenticated visitor to. Returning null keeps
+         * the auth middleware from resolving one, which otherwise threw a
+         * RouteNotFoundException and surfaced as a 500 instead of a 401.
+         * Requests that ask for JSON -- which the frontend always does --
+         * already short-circuit to 401 before this is reached.
+         */
+        $middleware->redirectGuestsTo(fn () => null);
+
         $middleware->alias([
             'subscription' => \App\Http\Middleware\CheckSubscription::class,
             'approved' => \App\Http\Middleware\EnsureAccountApproved::class,
