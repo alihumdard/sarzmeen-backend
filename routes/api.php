@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\My\NotificationController;
 use App\Http\Controllers\Api\My\ProfileController as MyProfileController;
 use App\Http\Controllers\Api\My\PropertyController as MyPropertyController;
 use App\Http\Controllers\Api\My\PropertyAnalyticsController;
+use App\Http\Controllers\Api\My\SavedPaymentPlanController;
 use App\Http\Controllers\Api\My\PropertyImageController;
 use App\Http\Controllers\Api\My\StatsController as MyStatsController;
 use App\Http\Controllers\Api\My\SubscriptionController;
@@ -185,6 +186,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/properties/{property}/images/reorder', [PropertyImageController::class, 'reorder']);
         Route::delete('/properties/{property}/images/{image}', [PropertyImageController::class, 'destroy']);
         Route::get('/properties/{property}/analytics', PropertyAnalyticsController::class);
+
+        // Payment plans kept from the calculator.
+        Route::get('/payment-plans', [SavedPaymentPlanController::class, 'index']);
+        Route::post('/payment-plans', [SavedPaymentPlanController::class, 'store']);
+        Route::get('/payment-plans/{id}', [SavedPaymentPlanController::class, 'show']);
+        Route::put('/payment-plans/{id}', [SavedPaymentPlanController::class, 'update']);
+        Route::delete('/payment-plans/{id}', [SavedPaymentPlanController::class, 'destroy']);
 
         // Subscriptions & Payments
         Route::get('/subscription/plans', [SubscriptionController::class, 'plans']);
