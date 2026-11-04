@@ -7,6 +7,7 @@ namespace App\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class ImageService
 {
@@ -15,11 +16,22 @@ class ImageService
         $filename = Str::random(30) . '.' . $file->getClientOriginalExtension();
         $path = "{$directory}/{$filename}";
 
+        /*
+         * Both writes return false rather than throwing when the disk
+         * refuses them -- a directory owned by another user is the usual
+         * cause. Ignoring that returned a path for a file that was never
+         * written: the caller saved it, the request answered 200, and the
+         * image 404'd forever after. Fail loudly instead.
+         */
         if ($maxWidth && $this->canResize($file)) {
             $image = $this->resizeImage($file, $maxWidth, $quality ?? 85);
-            Storage::disk('public')->put($path, $image);
+            $written = Storage::disk('public')->put($path, $image);
         } else {
-            Storage::disk('public')->putFileAs($directory, $file, $filename);
+            $written = Storage::disk('public')->putFileAs($directory, $file, $filename);
+        }
+
+        if ($written === false) {
+            throw new RuntimeException("Could not write the upload to {$path}.");
         }
 
         return $path;
@@ -30,11 +42,16 @@ class ImageService
         $filename = 'thumb_' . Str::random(30) . '.' . $file->getClientOriginalExtension();
         $path = "{$directory}/{$filename}";
 
+        // Same as upload(): a refused write must not look like a success.
         if ($this->canResize($file)) {
             $image = $this->resizeImage($file, $width, $quality);
-            Storage::disk('public')->put($path, $image);
+            $written = Storage::disk('public')->put($path, $image);
         } else {
-            Storage::disk('public')->putFileAs($directory, $file, $filename);
+            $written = Storage::disk('public')->putFileAs($directory, $file, $filename);
+        }
+
+        if ($written === false) {
+            throw new RuntimeException("Could not write the thumbnail to {$path}.");
         }
 
         return $path;
