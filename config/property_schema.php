@@ -414,6 +414,15 @@ return [
             'core' => ['beds', 'baths', 'kitchens', 'livingRooms', 'carParking', 'furnishing', 'propertyCondition'],
             'groups' => ['rooms', 'building', 'buildingAmenities', 'utilities', 'comfort', 'views'],
         ],
+        /*
+         * The Homes category's 3-bed apartment. Its slug carries the
+         * category because 'three-bed-apartment' was already taken by the
+         * High-Rise type of the same name.
+         */
+        '3-bed-apartment-homes-in' => [
+            'core' => ['beds', 'baths', 'kitchens', 'livingRooms', 'carParking', 'furnishing', 'propertyCondition'],
+            'groups' => ['rooms', 'building', 'buildingAmenities', 'utilities', 'comfort', 'views'],
+        ],
         'penthouse' => [
             'core' => ['beds', 'baths', 'kitchens', 'livingRooms', 'carParking', 'furnishing', 'propertyCondition'],
             'groups' => ['rooms', 'building', 'buildingAmenities', 'luxury', 'utilities', 'comfort', 'views'],
@@ -469,6 +478,14 @@ return [
         'office' => [
             'core' => ['carParking', 'furnishing', 'propertyCondition'],
             'groups' => ['office', 'commercialUnit', 'building', 'buildingAmenities', 'utilities', 'comfort'],
+        ],
+        /*
+         * The High-Rise category's own shop, which mirrors 'shop'. Without
+         * an entry here its step 2 rendered no fields at all.
+         */
+        'commercial-shop' => [
+            'core' => ['carParking', 'furnishing', 'propertyCondition'],
+            'groups' => ['commercialUnit', 'building', 'buildingAmenities', 'utilities', 'comfort'],
         ],
         'showroom' => [
             'core' => ['carParking', 'furnishing', 'propertyCondition'],

@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Admin\ReportController;
 use App\Http\Controllers\Api\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Api\Admin\PropertyController as AdminPropertyController;
 use App\Http\Controllers\Api\Agency\AgentController as AgencyAgentController;
+use App\Http\Controllers\Api\Agency\ProfileController as AgencyProfileController;
 use App\Http\Controllers\Api\Agency\PropertyController as AgencyPropertyController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\LoginController;
@@ -222,6 +223,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/agents/{agent}', [AgencyAgentController::class, 'update']);
         Route::delete('/agents/{agent}', [AgencyAgentController::class, 'destroy']);
         Route::get('/properties', [AgencyPropertyController::class, 'index']);
+
+        /*
+         * The agency's own profile. The logo column and the public page that
+         * shows it both existed, but nothing could set it.
+         */
+        Route::get('/profile', [AgencyProfileController::class, 'show']);
+        Route::post('/profile', [AgencyProfileController::class, 'update'])
+            ->middleware('throttle:uploads');
     });
 
     /*
@@ -263,10 +272,25 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('project-categories', ProjectCategoryController::class)->except('index');
         });
 
-        // Locations are managed separately from the property taxonomy, so the
-        // permission can be granted on its own.
+        /*
+         * Locations are shared by every account, so editing or removing one
+         * reaches other people's listings. Agents and agencies were granted
+         * locations.manage so they could add a missing area while listing a
+         * property; that must not also let them rename or delete the 3,400
+         * locations everyone else depends on.
+         *
+         * So the write verbs are split: adding needs locations.manage, while
+         * changing or removing an existing row is admin-only.
+         */
         Route::middleware('permission:locations.manage')->group(function () {
-            Route::apiResource('locations', LocationController::class)->except('index');
+            Route::post('/locations', [LocationController::class, 'store']);
+            Route::get('/locations/{location}', [LocationController::class, 'show']);
+        });
+
+        Route::middleware('role:admin')->group(function () {
+            Route::put('/locations/{location}', [LocationController::class, 'update']);
+            Route::patch('/locations/{location}', [LocationController::class, 'update']);
+            Route::delete('/locations/{location}', [LocationController::class, 'destroy']);
         });
 
         // Property moderation
