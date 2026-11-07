@@ -28,4 +28,14 @@ class ServiceController extends Controller
 
         return response()->json(['data' => $services]);
     }
+
+    /** One published service, for its own page. */
+    public function show(string $slug): JsonResponse
+    {
+        $service = Service::published()->where('slug', $slug)->firstOrFail();
+
+        return response()->json([
+            'data' => (new ServiceResource($service))->resolve(),
+        ]);
+    }
 }

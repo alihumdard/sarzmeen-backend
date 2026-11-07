@@ -106,6 +106,7 @@ Route::get('/agencies/{slug}', [PublicAgencyController::class, 'show']);
 // Public content routes
 Route::get('/testimonials', [TestimonialController::class, 'index']);
 Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services/{slug}', [ServiceController::class, 'show']);
 Route::get('/faqs', [FaqController::class, 'index']);
 
 // Public site settings (homepage config)

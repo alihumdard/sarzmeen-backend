@@ -69,6 +69,28 @@ class ServiceApiTest extends TestCase
             ->assertJsonPath('data.1.title', 'Second');
     }
 
+    public function test_one_service_can_be_fetched_by_its_slug(): void
+    {
+        Service::create($this->payload(['slug' => 'single', 'title' => 'Single']));
+
+        $this->getJson('/api/services/single')
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Single')
+            ->assertJsonPath('data.points.0', 'First thing');
+    }
+
+    public function test_a_hidden_service_has_no_public_page(): void
+    {
+        Service::create($this->payload(['slug' => 'secret', 'status' => 'hidden']));
+
+        $this->getJson('/api/services/secret')->assertNotFound();
+    }
+
+    public function test_an_unknown_slug_is_not_found(): void
+    {
+        $this->getJson('/api/services/nothing-here')->assertNotFound();
+    }
+
     public function test_an_admin_can_create_a_service(): void
     {
         $this->actingAs($this->admin())
