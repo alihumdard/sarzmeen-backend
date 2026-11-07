@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\VideoController as PublicVideoController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\SitemapController;
+use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\TestimonialController;
 use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\Admin\PaymentController as AdminPaymentController;
@@ -60,6 +61,7 @@ use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController as AdminBlogCategoryController;
 use App\Http\Controllers\Api\Admin\BlogTagController as AdminBlogTagController;
 use App\Http\Controllers\Api\Admin\InquiryController as AdminInquiryController;
+use App\Http\Controllers\Api\Admin\ServiceController as AdminServiceController;
 use App\Http\Controllers\Api\Admin\TestimonialController as AdminTestimonialController;
 use App\Http\Controllers\Api\Admin\FaqController as AdminFaqController;
 use App\Http\Controllers\Api\Admin\SiteSettingController;
@@ -103,6 +105,7 @@ Route::get('/agencies/{slug}', [PublicAgencyController::class, 'show']);
 
 // Public content routes
 Route::get('/testimonials', [TestimonialController::class, 'index']);
+Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/faqs', [FaqController::class, 'index']);
 
 // Public site settings (homepage config)
@@ -243,6 +246,7 @@ Route::middleware('auth:sanctum')->group(function () {
         .'|properties.edit.own|properties.edit.any|properties.publish'
         .'|projects.edit.own|projects.edit.any|blogs.manage'
         .'|inquiries.view.own|inquiries.view.any|testimonials.manage|faqs.manage|settings.manage'
+        .'|services.manage'
     )->prefix('admin')->group(function () {
         // Dashboard figures; the controller scopes them to the caller's role.
         Route::get('/stats', AdminStatsController::class);
@@ -365,6 +369,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Testimonial CRUD
         Route::apiResource('testimonials', AdminTestimonialController::class)->except('show')
             ->middleware('permission:testimonials.manage');
+
+        // Service CRUD, for the public Services page
+        Route::apiResource('services', AdminServiceController::class)
+            ->middleware('permission:services.manage');
 
         // FAQ CRUD
         Route::apiResource('faqs', AdminFaqController::class)->except('show')

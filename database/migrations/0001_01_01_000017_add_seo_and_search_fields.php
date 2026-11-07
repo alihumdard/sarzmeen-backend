@@ -26,7 +26,15 @@ return new class extends Migration
             $table->string('meta_description')->nullable()->after('meta_title');
         });
 
-        // Full-text search indexes (PostgreSQL)
+        /*
+         * Full-text search indexes, in PostgreSQL's own syntax. Skipped on
+         * any other driver so the test suite, which runs on SQLite, can get
+         * through the migrations rather than failing on the first one.
+         */
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
         DB::statement("CREATE INDEX properties_fulltext_idx ON properties USING gin (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(description, '') || ' ' || coalesce(full_location, '')))");
         DB::statement("CREATE INDEX projects_fulltext_idx ON projects USING gin (to_tsvector('english', coalesce(name, '') || ' ' || coalesce(description, '') || ' ' || coalesce(full_location, '')))");
         DB::statement("CREATE INDEX blogs_fulltext_idx ON blogs USING gin (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(excerpt, '') || ' ' || coalesce(content, '')))");

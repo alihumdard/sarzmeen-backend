@@ -27,7 +27,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'categories.manage', 'locations.manage',
             'blogs.manage', 'blogs.manage.any', 'testimonials.manage',
             'faqs.manage', 'inquiries.view.own', 'inquiries.view.any',
-            'settings.manage', 'roles.manage',
+            'settings.manage', 'roles.manage', 'services.manage',
         ];
 
         foreach ($permissions as $permission) {

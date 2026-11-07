@@ -20,9 +20,12 @@ return new class extends Migration
 
         // GIN index makes containment queries (specs @> '{"cornerPlot":true}')
         // usable for filtering without promoting each field to a column.
-        Schema::getConnection()->statement(
-            'CREATE INDEX properties_specs_gin ON properties USING gin (specs)'
-        );
+        // PostgreSQL only, so the SQLite test database skips it.
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            Schema::getConnection()->statement(
+                'CREATE INDEX properties_specs_gin ON properties USING gin (specs)'
+            );
+        }
     }
 
     public function down(): void
