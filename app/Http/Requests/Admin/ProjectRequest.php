@@ -16,6 +16,24 @@ use Illuminate\Validation\Rule;
 
 class ProjectRequest extends FormRequest
 {
+    /**
+     * The components a plan splits 100% between.
+     *
+     * Named once because the rules and the total are built from the same
+     * list: pctBiAnnual was missing from the total alone, so a plan the form
+     * had balanced to 100% was rejected as totalling 85.71% -- the six
+     * shares of a seven-way split the check could see.
+     */
+    private const PERCENT_KEYS = [
+        'pctBooking',
+        'pctConfirmation',
+        'pctMonthly',
+        'pctBiAnnual',
+        'pctBalloon',
+        'pctGrey',
+        'pctPossession',
+    ];
+
     public function authorize(): bool
     {
         return true;
@@ -124,13 +142,11 @@ class ProjectRequest extends FormRequest
             'units.*.details' => ['nullable', 'array'],
 
             'paymentTerms' => ['nullable', 'array'],
-            'paymentTerms.pctBooking' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'paymentTerms.pctConfirmation' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'paymentTerms.pctMonthly' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'paymentTerms.pctBiAnnual' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'paymentTerms.pctBalloon' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'paymentTerms.pctGrey' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'paymentTerms.pctPossession' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            ...collect(self::PERCENT_KEYS)
+                ->mapWithKeys(fn (string $key) => [
+                    "paymentTerms.{$key}" => ['nullable', 'numeric', 'min:0', 'max:100'],
+                ])
+                ->all(),
             'paymentTerms.monthlyCount' => ['nullable', 'integer', 'min:0', 'max:600'],
             'paymentTerms.biAnnualCount' => ['nullable', 'integer', 'min:0', 'max:100'],
             'paymentTerms.balloonCount' => ['nullable', 'integer', 'min:0', 'max:100'],
@@ -154,10 +170,8 @@ class ProjectRequest extends FormRequest
                 return;
             }
 
-            $total = collect([
-                'pctBooking', 'pctConfirmation', 'pctMonthly',
-                'pctBalloon', 'pctGrey', 'pctPossession',
-            ])->sum(fn (string $key) => (float) ($terms[$key] ?? 0));
+            $total = collect(self::PERCENT_KEYS)
+                ->sum(fn (string $key) => (float) ($terms[$key] ?? 0));
 
             if ($total === 0.0) {
                 return;
