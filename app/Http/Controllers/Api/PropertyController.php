@@ -83,7 +83,18 @@ class PropertyController extends Controller
         }
 
         if ($request->filled('agency')) {
-            $query->where('agency_id', $request->input('agency'));
+            /*
+             * By slug as well as by id, so an agency's own page can ask for
+             * its listings with the slug it was reached by -- the way the
+             * agent filter above already works.
+             */
+            $agency = $request->input('agency');
+
+            if (ctype_digit((string) $agency)) {
+                $query->where('agency_id', $agency);
+            } else {
+                $query->whereHas('agency', fn ($q) => $q->where('slug', $agency));
+            }
         }
 
         if ($request->boolean('featured')) {

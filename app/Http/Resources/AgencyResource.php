@@ -36,6 +36,25 @@ class AgencyResource extends JsonResource
                 $this->services->pluck('name')->all()
             ),
             'owner' => new AgencyOwnerResource($this->whenLoaded('owner')),
+            /*
+             * The team, when the caller asked for it. The count alone left
+             * the agency page saying "1 Team Member" above an empty space,
+             * because it had nobody to list.
+             */
+            'agents' => $this->whenLoaded('agents', fn () =>
+                $this->agents
+                    ->filter(fn ($agent) => $agent->user !== null)
+                    ->map(fn ($agent) => [
+                        'id' => (string) $agent->id,
+                        'slug' => $agent->slug,
+                        'name' => $agent->user->name,
+                        'title' => $agent->title ?: 'Agent',
+                        'avatar' => $imageService->url($agent->user->avatar ?? ''),
+                        'phone' => $agent->user->phone,
+                    ])
+                    ->values()
+                    ->all()
+            ),
         ];
     }
 }
