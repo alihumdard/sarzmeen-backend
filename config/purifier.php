@@ -44,6 +44,26 @@ return [
             'AutoFormat.AutoParagraph' => false,
             'AutoFormat.RemoveEmpty'   => true,
         ],
+        /*
+         * Service descriptions. Written by an administrator rather than by
+         * anyone with a listing, so this admits what the editor's toolbar
+         * actually offers: underline, links, images, rules and alignment.
+         * Without them a button appeared to work and the formatting was
+         * dropped on save, with nothing said.
+         *
+         * Still an allow-list: href is held to http, https and mailto, and
+         * no attribute carries script. Styles are limited to alignment.
+         */
+        'services' => [
+            'HTML.Doctype'             => 'HTML 4.01 Transitional',
+            'HTML.Allowed'             => 'p,br,strong,em,u,s,h2,h3,ul,ol,li,blockquote,code,pre,hr,'
+                .'a[href|title|rel|target],img[src|alt|title],p[style],h2[style],h3[style]',
+            'CSS.AllowedProperties'    => 'text-align',
+            'URI.AllowedSchemes'       => ['http' => true, 'https' => true, 'mailto' => true],
+            'HTML.TargetBlank'         => true,
+            'AutoFormat.AutoParagraph' => false,
+            'AutoFormat.RemoveEmpty'   => true,
+        ],
         "youtube" => [
             "HTML.SafeIframe"      => 'true',
             "URI.SafeIframeRegexp" => "%^(http://|https://|//)(www.youtube.com/embed/|player.vimeo.com/video/)%",

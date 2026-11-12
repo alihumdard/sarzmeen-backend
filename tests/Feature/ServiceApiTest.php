@@ -240,6 +240,33 @@ class ServiceApiTest extends TestCase
         $this->assertStringContainsString('<li>One</li>', $saved);
     }
 
+    /**
+     * Every button the toolbar offers.
+     *
+     * Underline, links and images were being dropped on save: the button
+     * worked, the formatting vanished, and nothing said so.
+     */
+    public function test_a_description_keeps_what_the_toolbar_offers(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/services', $this->payload([
+                'slug' => 'toolbar',
+                'description' => '<p><u>under</u> <s>struck</s> <em>italic</em></p>'
+                    .'<p><a href="https://example.com">a link</a></p>'
+                    .'<p><img src="https://example.com/x.jpg" alt="a picture"></p>'
+                    .'<p style="text-align:center">centred</p>'
+                    .'<hr /><blockquote>quoted</blockquote><ol><li>first</li></ol>',
+            ]))
+            ->assertCreated();
+
+        $saved = Service::where('slug', 'toolbar')->value('description');
+
+        foreach (['<u>under</u>', '<s>struck</s>', '<em>italic</em>', 'href="https://example.com"',
+            'src="https://example.com/x.jpg"', 'text-align:center', '<hr', '<blockquote>', '<ol>'] as $fragment) {
+            $this->assertStringContainsString($fragment, $saved, "lost: {$fragment}");
+        }
+    }
+
     public function test_a_description_cannot_carry_a_script(): void
     {
         $this->actingAs($this->admin())
@@ -256,5 +283,32 @@ class ServiceApiTest extends TestCase
         $this->assertStringNotContainsString('<script', $saved);
         $this->assertStringNotContainsString('onerror', $saved);
         $this->assertStringNotContainsString('javascript:', $saved);
+    }
+
+    /**
+     * The wider allow-list admits links, images and alignment, so each one
+     * is a way script could travel in if its attributes went unchecked.
+     */
+    public function test_a_description_cannot_carry_script_through_an_attribute(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/services', $this->payload([
+                'slug' => 'attributes',
+                'description' => '<p onclick="alert(1)">clickable</p>'
+                    .'<a href="javascript:alert(2)">link</a>'
+                    .'<img src="x" onload="alert(3)">'
+                    .'<iframe src="https://evil.test"></iframe>'
+                    .'<p style="position:fixed;top:0">pinned</p>',
+            ]))
+            ->assertCreated();
+
+        $saved = Service::where('slug', 'attributes')->value('description');
+
+        foreach (['onclick', 'javascript:', 'onload', '<iframe', 'position:fixed'] as $fragment) {
+            $this->assertStringNotContainsString($fragment, $saved, "kept: {$fragment}");
+        }
+
+        // The text itself survives; only the dangerous parts are dropped.
+        $this->assertStringContainsString('clickable', $saved);
     }
 }

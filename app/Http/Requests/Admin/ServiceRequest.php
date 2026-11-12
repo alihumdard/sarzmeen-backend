@@ -20,14 +20,16 @@ class ServiceRequest extends FormRequest
     /*
      * The description comes from the rich-text editor, so it arrives as
      * HTML and is rendered as HTML on the public page. Cleaned on the way
-     * in, against the same allow-list a listing uses: formatting survives,
-     * scripts and event handlers do not.
+     * in, against its own allow-list: everything the editor's toolbar
+     * offers survives, scripts and event handlers do not. Wider than a
+     * listing's, because an administrator writes this and not whoever
+     * happens to be posting a property.
      */
     protected function prepareForValidation(): void
     {
         if ($this->filled('description')) {
             $this->merge([
-                'description' => Purifier::clean($this->input('description'), 'listing'),
+                'description' => Purifier::clean($this->input('description'), 'services'),
             ]);
         }
     }
