@@ -164,4 +164,58 @@ class ServiceApiTest extends TestCase
             ->postJson('/api/admin/services', $this->payload())
             ->assertForbidden();
     }
+
+    /*
+     * The summary is the short line over the photograph; the description is
+     * the fuller text on the service's own page. They were one field, so a
+     * description long enough to be worth writing filled the hero with it.
+     */
+
+    public function test_a_service_keeps_its_description(): void
+    {
+        Service::create($this->payload([
+            'slug' => 'with-description',
+            'description' => "First paragraph.\n\nSecond paragraph.",
+        ]));
+
+        $this->getJson('/api/services/with-description')
+            ->assertOk()
+            ->assertJsonPath('data.summary', 'What this service does.')
+            ->assertJsonPath('data.description', "First paragraph.\n\nSecond paragraph.");
+    }
+
+    public function test_a_service_written_before_the_field_has_no_description(): void
+    {
+        // Every service that already exists is in this state.
+        Service::create($this->payload(['slug' => 'older']));
+
+        $this->getJson('/api/services/older')
+            ->assertOk()
+            ->assertJsonPath('data.summary', 'What this service does.')
+            ->assertJsonPath('data.description', null);
+    }
+
+    public function test_an_admin_can_save_a_description(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/services', $this->payload([
+                'slug' => 'saved',
+                'description' => 'The longer account.',
+            ]))
+            ->assertCreated();
+
+        $this->assertSame(
+            'The longer account.',
+            Service::where('slug', 'saved')->value('description'),
+        );
+    }
+
+    public function test_a_description_is_optional(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/services', $this->payload(['slug' => 'no-description']))
+            ->assertCreated();
+
+        $this->assertNull(Service::where('slug', 'no-description')->value('description'));
+    }
 }

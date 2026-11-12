@@ -24,6 +24,7 @@ class Service extends Model
         'title',
         'outcome',
         'summary',
+        'description',
         'points',
         'icon',
         'status',

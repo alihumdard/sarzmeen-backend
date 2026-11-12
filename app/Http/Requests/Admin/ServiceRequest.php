@@ -29,6 +29,8 @@ class ServiceRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'outcome' => ['required', 'string', 'max:255'],
             'summary' => ['required', 'string', 'max:2000'],
+            /* Optional: a service without one falls back to its summary. */
+            'description' => ['nullable', 'string', 'max:20000'],
             'points' => ['required', 'array', 'min:1', 'max:12'],
             'points.*' => ['required', 'string', 'max:500'],
             'icon' => ['required', 'string', Rule::in(Service::ICONS)],

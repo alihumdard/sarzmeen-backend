@@ -17,6 +17,8 @@ class ServiceResource extends JsonResource
             'title' => $this->title,
             'outcome' => $this->outcome,
             'summary' => $this->summary,
+            /* The longer text for the service's own page; may be unset. */
+            'description' => $this->description,
             /* Always a list, so the page can map over it without a guard. */
             'points' => $this->points ?? [],
             'icon' => $this->icon,
