@@ -8,12 +8,28 @@ use App\Enums\ContentStatus;
 use App\Models\Service;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Mews\Purifier\Facades\Purifier;
 
 class ServiceRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
+    }
+
+    /*
+     * The description comes from the rich-text editor, so it arrives as
+     * HTML and is rendered as HTML on the public page. Cleaned on the way
+     * in, against the same allow-list a listing uses: formatting survives,
+     * scripts and event handlers do not.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('description')) {
+            $this->merge([
+                'description' => Purifier::clean($this->input('description'), 'listing'),
+            ]);
+        }
     }
 
     public function rules(): array

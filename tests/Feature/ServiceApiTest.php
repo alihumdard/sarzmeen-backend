@@ -218,4 +218,43 @@ class ServiceApiTest extends TestCase
 
         $this->assertNull(Service::where('slug', 'no-description')->value('description'));
     }
+
+    /*
+     * The description is written in a rich-text editor and rendered as
+     * HTML on the public page, so what it carries has to be cleaned on the
+     * way in rather than trusted on the way out.
+     */
+
+    public function test_a_description_keeps_its_formatting(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/services', $this->payload([
+                'slug' => 'formatted',
+                'description' => '<p>A <strong>bold</strong> claim.</p><ul><li>One</li><li>Two</li></ul>',
+            ]))
+            ->assertCreated();
+
+        $saved = Service::where('slug', 'formatted')->value('description');
+
+        $this->assertStringContainsString('<strong>bold</strong>', $saved);
+        $this->assertStringContainsString('<li>One</li>', $saved);
+    }
+
+    public function test_a_description_cannot_carry_a_script(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/services', $this->payload([
+                'slug' => 'hostile',
+                'description' => '<p>Safe.</p><script>alert(1)</script>'
+                    .'<img src=x onerror="alert(2)"><a href="javascript:alert(3)">link</a>',
+            ]))
+            ->assertCreated();
+
+        $saved = Service::where('slug', 'hostile')->value('description');
+
+        $this->assertStringContainsString('Safe.', $saved);
+        $this->assertStringNotContainsString('<script', $saved);
+        $this->assertStringNotContainsString('onerror', $saved);
+        $this->assertStringNotContainsString('javascript:', $saved);
+    }
 }
