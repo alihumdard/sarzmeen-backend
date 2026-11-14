@@ -101,6 +101,47 @@ class BlogContentTest extends TestCase
         $this->assertStringNotContainsString('evil.test', $saved);
     }
 
+    /*
+     * Posts written before the editor understood video carry the address
+     * as an anchor, which reads as a blue line of text where a reader
+     * expects to watch something.
+     */
+
+    public function test_an_older_posts_bare_video_link_is_shown_as_the_video(): void
+    {
+        $blog = Blog::create($this->payload(
+            '<p><a href="https://youtu.be/SeMrEF87BFs?si=qS49OGvvdk8dIJbD">https://youtu.be/SeMrEF87BFs</a></p><p>And text.</p>',
+            ['status' => 'published', 'publishedAt' => now()],
+        ) + [
+            'blog_category_id' => BlogCategory::first()->id,
+            'author_id' => $this->editor()->id,
+            'published_at' => now(),
+        ]);
+
+        $content = $this->getJson("/api/blogs/{$blog->slug}")->assertOk()->json('data.content');
+
+        $this->assertStringContainsString('youtube.com/embed/SeMrEF87BFs', $content);
+        $this->assertStringNotContainsString('<a href="https://youtu.be', $content);
+        $this->assertStringContainsString('And text.', $content);
+    }
+
+    public function test_a_video_link_inside_a_sentence_stays_a_link(): void
+    {
+        $blog = Blog::create($this->payload(
+            '<p>See <a href="https://youtu.be/dQw4w9WgXcQ">this one</a> for more.</p>',
+            ['status' => 'published'],
+        ) + [
+            'blog_category_id' => BlogCategory::first()->id,
+            'author_id' => $this->editor()->id,
+            'published_at' => now(),
+        ]);
+
+        $content = $this->getJson("/api/blogs/{$blog->slug}")->assertOk()->json('data.content');
+
+        $this->assertStringContainsString('<a href="https://youtu.be/dQw4w9WgXcQ"', $content);
+        $this->assertStringNotContainsString('<iframe', $content);
+    }
+
     public function test_a_post_cannot_carry_a_script(): void
     {
         $saved = $this->save(
