@@ -64,6 +64,31 @@ return [
             'AutoFormat.AutoParagraph' => false,
             'AutoFormat.RemoveEmpty'   => true,
         ],
+        /*
+         * Blog posts. The widest allow-list, because an editor writes
+         * them and they carry headings, images and embedded video — but
+         * an allow-list all the same: the content was being rendered on
+         * the public page exactly as it arrived, with nothing removed.
+         *
+         * SafeIframe with the pattern below admits a YouTube or Vimeo
+         * embed and nothing else, so an iframe cannot point anywhere.
+         */
+        'blog' => [
+            'HTML.Doctype'             => 'HTML 4.01 Transitional',
+            'HTML.Allowed'             => 'p,br,strong,b,em,i,u,s,mark,h2,h3,h4,ul,ol,li,blockquote,code,pre,hr,'
+                .'a[href|title|rel|target],img[src|alt|title|width|height],'
+                /* no `allow`: HTMLPurifier does not know the attribute and warns on it. */
+                .'iframe[src|width|height|frameborder|allowfullscreen|title],'
+                .'figure,figcaption,table,thead,tbody,tr,th,td,'
+                .'p[style],h2[style],h3[style],h4[style]',
+            'CSS.AllowedProperties'    => 'text-align',
+            'URI.AllowedSchemes'       => ['http' => true, 'https' => true, 'mailto' => true],
+            'HTML.SafeIframe'          => true,
+            'URI.SafeIframeRegexp'     => '%^(https?:)?//(www\.youtube(-nocookie)?\.com/embed/|player\.vimeo\.com/video/)%',
+            'HTML.TargetBlank'         => true,
+            'AutoFormat.AutoParagraph' => false,
+            'AutoFormat.RemoveEmpty'   => false,
+        ],
         "youtube" => [
             "HTML.SafeIframe"      => 'true',
             "URI.SafeIframeRegexp" => "%^(http://|https://|//)(www.youtube.com/embed/|player.vimeo.com/video/)%",

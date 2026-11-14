@@ -7,12 +7,29 @@ namespace App\Http\Requests\Admin;
 use App\Enums\BlogStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Mews\Purifier\Facades\Purifier;
 
 class BlogRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
+    }
+
+    /*
+     * A post's body is written as HTML and rendered as HTML on the public
+     * page, and was going through untouched: whatever reached the column
+     * reached the reader. Cleaned here against the blog allow-list, which
+     * keeps the formatting and the YouTube embed and drops everything a
+     * script could travel in.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('content')) {
+            $this->merge([
+                'content' => Purifier::clean($this->input('content'), 'blog'),
+            ]);
+        }
     }
 
     public function messages(): array
