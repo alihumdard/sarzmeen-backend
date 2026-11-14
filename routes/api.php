@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Admin\StatsController as AdminStatsController;
 use App\Http\Controllers\Api\Admin\PropertyController as AdminPropertyController;
 use App\Http\Controllers\Api\Agency\AgentController as AgencyAgentController;
 use App\Http\Controllers\Api\Agency\ProfileController as AgencyProfileController;
+use App\Http\Controllers\Api\Agent\ProfileController as AgentProfileController;
 use App\Http\Controllers\Api\Agency\PropertyController as AgencyPropertyController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\LoginController;
@@ -234,6 +235,17 @@ Route::middleware('auth:sanctum')->group(function () {
          */
         Route::get('/profile', [AgencyProfileController::class, 'show']);
         Route::post('/profile', [AgencyProfileController::class, 'update'])
+            ->middleware('throttle:uploads');
+    });
+
+    /*
+     * Agent routes (agent role only). An agency could write its own
+     * description; an agent could not, so a bio reached a public page only
+     * if an administrator typed it there.
+     */
+    Route::middleware('role:agent')->prefix('agent')->group(function () {
+        Route::get('/profile', [AgentProfileController::class, 'show']);
+        Route::post('/profile', [AgentProfileController::class, 'update'])
             ->middleware('throttle:uploads');
     });
 
