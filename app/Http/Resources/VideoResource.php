@@ -33,10 +33,47 @@ class VideoResource extends JsonResource
             'featured' => $this->featured,
             'views' => $this->views,
             'sortOrder' => $this->sort_order,
+            /*
+             * Who put it here. A guide the site wrote and a walkthrough an
+             * agency posted sat side by side in the admin list looking
+             * identical, so an administrator could not tell which of them
+             * was theirs to edit.
+             */
+            'owner' => $this->owner(),
             'publishedAt' => $this->published_at?->toDateString(),
             'metaTitle' => $this->meta_title,
             'metaDescription' => $this->meta_description,
             'createdAt' => $this->created_at->toISOString(),
         ];
+    }
+
+    /**
+     * The agent or agency behind a video, or null for the site's own.
+     *
+     * The admin list eager-loads both, so this does not query per row.
+     */
+    private function owner(): ?array
+    {
+        if ($this->agent_id) {
+            $agent = $this->agent;
+
+            return [
+                'kind' => 'agent',
+                'name' => $agent?->user?->name ?? 'Unknown agent',
+                'slug' => $agent?->slug,
+            ];
+        }
+
+        if ($this->agency_id) {
+            $agency = $this->agency;
+
+            return [
+                'kind' => 'agency',
+                'name' => $agency?->name ?? 'Unknown agency',
+                'slug' => $agency?->slug,
+            ];
+        }
+
+        return null;
     }
 }

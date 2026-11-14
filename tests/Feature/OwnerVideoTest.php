@@ -25,6 +25,18 @@ class OwnerVideoTest extends TestCase
 
     private const LINK = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 
+    private function admin(): User
+    {
+        $permission = \Spatie\Permission\Models\Permission::findOrCreate('blogs.manage', 'web');
+        $role = Role::findOrCreate('admin', 'web');
+        $role->givePermissionTo($permission);
+
+        $user = User::factory()->create();
+        $user->assignRole($role);
+
+        return $user;
+    }
+
     private function agent(): Agent
     {
         $user = User::factory()->create();
@@ -251,6 +263,51 @@ class OwnerVideoTest extends TestCase
                 ->assertCreated()
                 ->assertJsonPath('data.youtubeId', 'dQw4w9WgXcQ');
         }
+    }
+
+    /*
+     * Who posted it. In the admin list a guide the site wrote and a
+     * walkthrough an agency posted looked identical, so an administrator
+     * could not tell which of them was theirs to edit.
+     */
+
+    public function test_the_admin_list_names_the_agent_behind_a_video(): void
+    {
+        $agent = $this->agent();
+        $agent->user->update(['name' => 'Sami Ullah']);
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/videos')
+            ->assertOk()
+            ->assertJsonPath('data.0.owner.kind', 'agent')
+            ->assertJsonPath('data.0.owner.name', 'Sami Ullah');
+    }
+
+    public function test_the_admin_list_names_the_agency_behind_a_video(): void
+    {
+        $agency = $this->agency();
+
+        $this->actingAs($agency->owner)
+            ->postJson('/api/agency/videos', ['title' => 'Ours', 'youtubeUrl' => self::LINK]);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/videos')
+            ->assertOk()
+            ->assertJsonPath('data.0.owner.kind', 'agency')
+            ->assertJsonPath('data.0.owner.name', 'An Agency');
+    }
+
+    public function test_the_sites_own_video_has_no_owner(): void
+    {
+        $this->editorial('A site video');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/videos')
+            ->assertOk()
+            ->assertJsonPath('data.0.owner', null);
     }
 
     public function test_a_signed_out_visitor_cannot_add_a_video(): void

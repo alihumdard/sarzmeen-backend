@@ -24,6 +24,8 @@ class VideoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $videos = Video::query()
+            /* For the owner column; without these the list queries per row. */
+            ->with(['agent.user', 'agency'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search')->toString().'%';
