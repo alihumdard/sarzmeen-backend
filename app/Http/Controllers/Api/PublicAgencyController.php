@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PageViewLog;
 use App\Http\Resources\AgencyResource;
 use App\Models\Agency;
 use App\Models\Property;
@@ -44,6 +45,10 @@ class PublicAgencyController extends Controller
             ->withCount('agents')
             ->with(['locations', 'services', 'owner', 'agents' => fn ($q) => $q->approved()->with('user')])
             ->firstOrFail();
+
+        /* Counted on the API call rather than in the page, so a
+           prefetch or a crawler does not inflate it. */
+        PageViewLog::record('agency', $agency->id);
 
         $propertiesForSale = Property::where('agency_id', $agency->id)
             ->where('purpose', 'sale')

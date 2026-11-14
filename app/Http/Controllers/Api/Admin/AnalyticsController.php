@@ -10,6 +10,7 @@ use App\Enums\PropertyStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Inquiry;
 use App\Models\Property;
+use App\Models\PageViewLog;
 use App\Models\PropertyViewLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -50,10 +51,62 @@ class AnalyticsController extends Controller
                 'newUsersLast30Days' => User::where('created_at', '>=', $thirtyDaysAgo)->count(),
                 'totalViews' => Property::sum('views'),
                 'totalViewsLast30Days' => PropertyViewLog::where('date', '>=', $thirtyDaysAgo)->sum('count'),
+
+                /*
+                 * What people came to look at. Only properties were ever
+                 * counted, so there was no telling whether the projects
+                 * were being read or the blog opened at all.
+                 *
+                 * Properties come from their own table, which predates
+                 * the rest; both are counted over the same window so the
+                 * figures can sit beside each other.
+                 */
+                'viewsByType' => static::viewsByType($thirtyDaysAgo),
             ];
         });
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Views per kind of page over the window, largest first.
+     *
+     * A kind nobody looked at is left out rather than shown as nought: an
+     * empty row says less than its absence, and the list is read as "what
+     * people are looking at".
+     */
+    private static function viewsByType(\Carbon\CarbonInterface $since): array
+    {
+        $counts = PageViewLog::where('date', '>=', $since)
+            ->select('viewable_type', DB::raw('sum(count) as total'))
+            ->groupBy('viewable_type')
+            ->toBase()
+            ->pluck('total', 'viewable_type')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+
+        $counts['property'] = (int) PropertyViewLog::where('date', '>=', $since)->sum('count');
+
+        $labels = [
+            'property' => 'Properties',
+            'project' => 'Projects',
+            'blog' => 'Blogs',
+            'agent' => 'Agents',
+            'agency' => 'Agencies',
+            'service' => 'Services',
+            'video' => 'Videos',
+        ];
+
+        return collect($counts)
+            ->filter(fn (int $n) => $n > 0)
+            ->sortDesc()
+            ->map(fn (int $n, string $kind) => [
+                'kind' => $kind,
+                'label' => $labels[$kind] ?? ucfirst($kind),
+                'count' => $n,
+            ])
+            ->values()
+            ->all();
     }
 
     public function propertiesByCity(): JsonResponse

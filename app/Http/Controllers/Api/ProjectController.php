@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PageViewLog;
 use App\Http\Resources\ProjectDetailResource;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
@@ -76,6 +77,10 @@ class ProjectController extends Controller
                 'documents' => fn ($q) => $q->public(),
             ])
             ->firstOrFail();
+
+        /* Counted on the API call rather than in the page, so a
+           prefetch or a crawler does not inflate it. */
+        PageViewLog::record('project', $project->id);
 
         return new ProjectDetailResource($project);
     }

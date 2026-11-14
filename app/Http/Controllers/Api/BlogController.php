@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PageViewLog;
 use App\Http\Resources\BlogCategoryResource;
 use App\Http\Resources\BlogDetailResource;
 use App\Http\Resources\BlogResource;
@@ -64,6 +65,10 @@ class BlogController extends Controller
             ->where('slug', $slug)
             ->with(['category', 'author', 'tags'])
             ->firstOrFail();
+
+        /* Counted on the API call rather than in the page, so a
+           prefetch or a crawler does not inflate it. */
+        PageViewLog::record('blog', $blog->id);
 
         return new BlogDetailResource($blog);
     }

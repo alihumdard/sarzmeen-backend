@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PageViewLog;
 use App\Http\Resources\VideoResource;
 use App\Models\Video;
 use Illuminate\Http\Request;
@@ -43,6 +44,10 @@ class VideoController extends Controller
         $video = Video::published()->editorial()->where('slug', $slug)->firstOrFail();
 
         $video->increment('views');
+
+        /* The running total was kept but never dated, so there was no way
+           to say when a guide was watched. */
+        PageViewLog::record('video', $video->id);
 
         return new VideoResource($video);
     }

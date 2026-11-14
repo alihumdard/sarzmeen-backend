@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PageViewLog;
 use App\Http\Resources\AgentResource;
 use App\Models\Agent;
 use App\Models\Property;
@@ -42,6 +43,10 @@ class PublicAgentController extends Controller
             ->where('slug', $slug)
             ->with(['user', 'agency', 'specializations', 'languages'])
             ->firstOrFail();
+
+        /* Counted on the API call rather than in the page, so a
+           prefetch or a crawler does not inflate it. */
+        PageViewLog::record('agent', $agent->id);
 
         $propertiesForSale = Property::ownedBy($agent->user)
             ->where('purpose', 'sale')

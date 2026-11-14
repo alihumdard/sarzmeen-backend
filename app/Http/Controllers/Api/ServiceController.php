@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PageViewLog;
 use App\Http\Resources\ServiceResource;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,10 @@ class ServiceController extends Controller
     public function show(string $slug): JsonResponse
     {
         $service = Service::published()->where('slug', $slug)->firstOrFail();
+
+        /* Counted on the API call rather than in the page, so a
+           prefetch or a crawler does not inflate it. */
+        PageViewLog::record('service', $service->id);
 
         return response()->json([
             'data' => (new ServiceResource($service))->resolve(),
