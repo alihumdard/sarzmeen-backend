@@ -10,11 +10,20 @@ use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * The public video library.
+ *
+ * Editorial only, throughout: an agent's or agency's video belongs on
+ * their profile. The slug route matters as much as the list — without it
+ * someone's listing walkthrough opens inside the library by its own URL,
+ * which is the same thing by another door.
+ */
 class VideoController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
         $videos = Video::published()
+            ->editorial()
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search')->toString().'%';
                 $q->where(fn ($w) => $w->where('title', 'ilike', $term)
@@ -31,7 +40,7 @@ class VideoController extends Controller
 
     public function show(string $slug): VideoResource
     {
-        $video = Video::published()->where('slug', $slug)->firstOrFail();
+        $video = Video::published()->editorial()->where('slug', $slug)->firstOrFail();
 
         $video->increment('views');
 
@@ -42,6 +51,7 @@ class VideoController extends Controller
     public function related(string $slug): AnonymousResourceCollection
     {
         $videos = Video::published()
+            ->editorial()
             ->where('slug', '!=', $slug)
             ->orderByDesc('featured')
             ->orderByDesc('published_at')

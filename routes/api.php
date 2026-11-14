@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Admin\PropertyController as AdminPropertyController
 use App\Http\Controllers\Api\Agency\AgentController as AgencyAgentController;
 use App\Http\Controllers\Api\Agency\ProfileController as AgencyProfileController;
 use App\Http\Controllers\Api\Agent\ProfileController as AgentProfileController;
+use App\Http\Controllers\Api\OwnerVideoController;
 use App\Http\Controllers\Api\Agency\PropertyController as AgencyPropertyController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\Auth\LoginController;
@@ -236,6 +237,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [AgencyProfileController::class, 'show']);
         Route::post('/profile', [AgencyProfileController::class, 'update'])
             ->middleware('throttle:uploads');
+
+        /* Its own videos, shown on its page and never in the library. */
+        Route::get('/videos', [OwnerVideoController::class, 'index']);
+        Route::post('/videos', [OwnerVideoController::class, 'store']);
+        Route::put('/videos/{video}', [OwnerVideoController::class, 'update']);
+        Route::delete('/videos/{video}', [OwnerVideoController::class, 'destroy']);
     });
 
     /*
@@ -247,6 +254,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/profile', [AgentProfileController::class, 'show']);
         Route::post('/profile', [AgentProfileController::class, 'update'])
             ->middleware('throttle:uploads');
+
+        /* Their own videos, shown on their page and never in the library. */
+        Route::get('/videos', [OwnerVideoController::class, 'index']);
+        Route::post('/videos', [OwnerVideoController::class, 'store']);
+        Route::put('/videos/{video}', [OwnerVideoController::class, 'update']);
+        Route::delete('/videos/{video}', [OwnerVideoController::class, 'destroy']);
     });
 
     /*

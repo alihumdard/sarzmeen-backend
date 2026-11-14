@@ -62,6 +62,17 @@ class PublicAgencyController extends Controller
          * the page printed "Agent at" with nothing after it.
          */
         $data = (new AgencyResource($agency))->resolve(request());
+
+        /* Its own videos. These are kept out of the public library, so
+           this page is the only place they are shown. */
+        $data['videos'] = \App\Http\Resources\VideoResource::collection(
+            \App\Models\Video::published()
+                ->where('agency_id', $agency->id)
+                ->orderBy('sort_order')
+                ->latest('id')
+                ->get()
+        )->resolve(request());
+
         $data['propertiesForSale'] = $propertiesForSale;
         $data['propertiesForRent'] = $propertiesForRent;
 

@@ -17,6 +17,8 @@ class Video extends Model
     protected array $activityFields = ['title', 'status', 'published_at', 'featured'];
 
     protected $fillable = [
+        'agent_id',
+        'agency_id',
         'title',
         'slug',
         'description',
@@ -44,6 +46,27 @@ class Video extends Model
     public function scopePublished($query)
     {
         return $query->where('status', BlogStatus::Published);
+    }
+
+    /**
+     * The site's own videos: the library, and only the library.
+     *
+     * An agent's or agency's video belongs on their profile. Without this
+     * the library would quietly become a feed of everyone's listings.
+     */
+    public function scopeEditorial($query)
+    {
+        return $query->whereNull('agent_id')->whereNull('agency_id');
+    }
+
+    public function agent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function agency(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Agency::class);
     }
 
     /**

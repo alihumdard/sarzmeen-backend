@@ -63,6 +63,16 @@ class PublicAgentController extends Controller
         $data['propertiesForSale'] = $propertiesForSale;
         $data['propertiesForRent'] = $propertiesForRent;
 
+        /* Their own videos. These are kept out of the public library, so
+           this page is the only place they are shown. */
+        $data['videos'] = \App\Http\Resources\VideoResource::collection(
+            \App\Models\Video::published()
+                ->where('agent_id', $agent->id)
+                ->orderBy('sort_order')
+                ->latest('id')
+                ->get()
+        )->resolve(request());
+
         return response()->json(['data' => $data]);
     }
 }
