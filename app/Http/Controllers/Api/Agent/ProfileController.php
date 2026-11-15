@@ -86,9 +86,18 @@ class ProfileController extends Controller
             'dealsClosed' => 'deals_closed',
             'officeAddress' => 'office_address',
         ] as $input => $column) {
-            if (array_key_exists($input, $data)) {
-                $agent->{$column} = $data[$input];
+            if (! array_key_exists($input, $data)) {
+                continue;
             }
+
+            /*
+             * The two figures are counts with a default of nought and no
+             * null to fall back on, so clearing the field means none
+             * rather than unknown. Sending null failed the save outright.
+             */
+            $agent->{$column} = in_array($input, ['yearsExperience', 'dealsClosed'], true)
+                ? (int) ($data[$input] ?? 0)
+                : $data[$input];
         }
 
         $agent->save();

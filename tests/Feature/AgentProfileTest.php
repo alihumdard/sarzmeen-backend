@@ -128,6 +128,41 @@ class AgentProfileTest extends TestCase
         $this->getJson('/api/agent/profile')->assertUnauthorized();
     }
 
+    /**
+     * The two figures are counts with a default of nought and no null to
+     * fall back on, so clearing the field means none. Sending null failed
+     * the save outright, with a database error rather than a message.
+     */
+    public function test_clearing_a_figure_sets_it_to_nought(): void
+    {
+        $agent = $this->agent(['years_experience' => 15, 'deals_closed' => 60]);
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/profile', [
+                'bio' => 'Still here.',
+                'yearsExperience' => null,
+                'dealsClosed' => null,
+            ])
+            ->assertOk();
+
+        $agent->refresh();
+
+        $this->assertSame(0, $agent->years_experience);
+        $this->assertSame(0, $agent->deals_closed);
+    }
+
+    public function test_an_empty_figure_sent_as_a_blank_string_is_nought(): void
+    {
+        $agent = $this->agent(['years_experience' => 8]);
+
+        /* What the form sends when the box is emptied. */
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/profile', ['yearsExperience' => ''])
+            ->assertOk();
+
+        $this->assertSame(0, $agent->fresh()->years_experience);
+    }
+
     public function test_a_bio_longer_than_the_column_is_refused(): void
     {
         $agent = $this->agent();
