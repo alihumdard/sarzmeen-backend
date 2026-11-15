@@ -390,6 +390,31 @@ class OwnerVideoTest extends TestCase
             ->assertJsonValidationErrors('tags');
     }
 
+    /** Tags are written for finding a video by, not for showing. */
+    public function test_tags_find_a_video_in_the_admin_list(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', [
+                'title' => 'A walkthrough',
+                'youtubeUrl' => self::LINK,
+                'tags' => ['Gulberg', '10 Marla'],
+            ])
+            ->assertCreated();
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', ['title' => 'Another', 'youtubeUrl' => self::LINK])
+            ->assertCreated();
+
+        /* The word is in neither title nor description — only a tag. */
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/videos?search=Gulberg')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'A walkthrough');
+    }
+
     public function test_a_signed_out_visitor_cannot_add_a_video(): void
     {
         $this->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])

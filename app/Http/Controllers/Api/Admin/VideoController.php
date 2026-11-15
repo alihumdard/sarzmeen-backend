@@ -29,8 +29,15 @@ class VideoController extends Controller
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search')->toString().'%';
+                /*
+                 * Tags too. They are deliberately not shown anywhere —
+                 * the owner writes them for finding a video by, the way
+                 * YouTube's are — so searching is the only thing they
+                 * can be for.
+                 */
                 $q->where(fn ($w) => $w->where('title', 'ilike', $term)
-                    ->orWhere('description', 'ilike', $term));
+                    ->orWhere('description', 'ilike', $term)
+                    ->orWhereRaw('tags::text ilike ?', [$term]));
             })
             ->orderBy('sort_order')
             ->latest()
