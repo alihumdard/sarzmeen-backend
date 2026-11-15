@@ -412,6 +412,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/analytics/registrations-trend', [AnalyticsController::class, 'registrationsTrend']);
         Route::get('/analytics/views-trend', [AnalyticsController::class, 'viewsTrend']);
         Route::get('/analytics/top-properties', [AnalyticsController::class, 'topProperties']);
+        Route::get('/analytics/top-blogs', [AnalyticsController::class, 'topBlogs']);
+        Route::get('/analytics/blog-views-trend', [AnalyticsController::class, 'blogViewsTrend']);
         Route::get('/analytics/price-distribution', [AnalyticsController::class, 'priceDistribution']);
 
         // Reports (CSV export)

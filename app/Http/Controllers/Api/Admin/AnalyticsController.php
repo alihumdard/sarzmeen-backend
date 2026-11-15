@@ -10,6 +10,7 @@ use App\Enums\PropertyStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Inquiry;
 use App\Models\Property;
+use App\Models\Blog;
 use App\Models\PageViewLog;
 use App\Models\PropertyViewLog;
 use App\Models\User;
@@ -229,6 +230,93 @@ class AnalyticsController extends Controller
             ]);
 
         return response()->json(['data' => $data]);
+    }
+
+    /**
+     * The most-read posts over the window.
+     *
+     * Counted from the view log rather than a column on the post: blogs
+     * have no running total of their own, and the log is what the
+     * dashboard's other view figures are read from, so the two agree.
+     */
+    public function topBlogs(Request $request): JsonResponse
+    {
+        $days = min($request->integer('days', 30), 365);
+        $limit = min($request->integer('limit', 5), 25);
+        $since = now()->subDays($days)->startOfDay();
+
+        $counts = PageViewLog::where('viewable_type', 'blog')
+            ->where('date', '>=', $since)
+            ->select('viewable_id', DB::raw('sum(count) as total'))
+            ->groupBy('viewable_id')
+            ->orderByDesc('total')
+            ->limit($limit)
+            ->toBase()
+            ->pluck('total', 'viewable_id');
+
+        if ($counts->isEmpty()) {
+            return response()->json(['data' => []]);
+        }
+
+        /* One query for the posts, then put them back in view order —
+           whereIn returns them by id. */
+        $blogs = Blog::whereIn('id', $counts->keys())
+            ->with('category')
+            ->get()
+            ->keyBy('id');
+
+        $data = $counts
+            ->map(function ($total, $id) use ($blogs) {
+                $blog = $blogs->get($id);
+
+                if (! $blog) {
+                    return null;
+                }
+
+                return [
+                    'id' => (string) $blog->id,
+                    'slug' => $blog->slug,
+                    'title' => $blog->title,
+                    'category' => $blog->category?->name,
+                    'publishedAt' => $blog->published_at?->toDateString(),
+                    'views' => (int) $total,
+                ];
+            })
+            /* A post deleted since it was read leaves a row with nothing
+               to name; drop it rather than show a blank line. */
+            ->filter()
+            ->values();
+
+        return response()->json(['data' => $data]);
+    }
+
+    /** Daily blog views over the window, with the quiet days filled in. */
+    public function blogViewsTrend(Request $request): JsonResponse
+    {
+        $days = min($request->integer('days', 30), 90);
+
+        $logged = PageViewLog::where('viewable_type', 'blog')
+            ->where('date', '>=', now()->subDays($days)->startOfDay())
+            ->select(DB::raw('date::text as day'), DB::raw('sum(count) as count'))
+            ->groupBy('day')
+            ->orderBy('day')
+            ->pluck('count', 'day');
+
+        /* Days with no views have no rows, and a chart drawn from those
+           alone would skip them rather than show the dip. */
+        $data = collect(range($days - 1, 0))->map(function (int $ago) use ($logged) {
+            $date = now()->subDays($ago)->toDateString();
+
+            return [
+                'date' => $date,
+                'count' => (int) ($logged[$date] ?? 0),
+            ];
+        });
+
+        return response()->json([
+            'data' => $data,
+            'total' => (int) $logged->sum(),
+        ]);
     }
 
     public function priceDistribution(): JsonResponse

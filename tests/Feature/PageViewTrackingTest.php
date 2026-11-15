@@ -55,6 +55,25 @@ class PageViewTrackingTest extends TestCase
         ]);
     }
 
+    private function blog(string $title): \App\Models\Blog
+    {
+        $category = \App\Models\BlogCategory::firstOrCreate(
+            ['slug' => 'guides'],
+            ['name' => 'Guides'],
+        );
+
+        return \App\Models\Blog::create([
+            'title' => $title,
+            'slug' => str($title)->slug()->value().'-'.strtolower(str()->random(5)),
+            'excerpt' => 'A summary.',
+            'content' => '<p>Text.</p>',
+            'blog_category_id' => $category->id,
+            'author_id' => User::factory()->create()->id,
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+    }
+
     private function service(): Service
     {
         return Service::create([
@@ -145,6 +164,69 @@ class PageViewTrackingTest extends TestCase
 
         $this->assertTrue($kinds->contains('project'));
         $this->assertFalse($kinds->contains('blog'));
+    }
+
+    /*
+     * The blog sections on the dashboard.
+     */
+
+    public function test_the_most_read_posts_are_listed_in_order(): void
+    {
+        $quiet = $this->blog('A quiet post');
+        $busy = $this->blog('A busy post');
+
+        PageViewLog::create(['viewable_type' => 'blog', 'viewable_id' => $quiet->id, 'date' => now()->toDateString(), 'count' => 3]);
+        PageViewLog::create(['viewable_type' => 'blog', 'viewable_id' => $busy->id, 'date' => now()->toDateString(), 'count' => 40]);
+
+        $data = $this->actingAs($this->admin())
+            ->getJson('/api/admin/analytics/top-blogs')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertCount(2, $data);
+        $this->assertSame('A busy post', $data[0]['title']);
+        $this->assertSame(40, $data[0]['views']);
+        $this->assertSame('A quiet post', $data[1]['title']);
+    }
+
+    public function test_a_post_deleted_since_it_was_read_is_dropped(): void
+    {
+        $blog = $this->blog('Gone');
+        PageViewLog::create(['viewable_type' => 'blog', 'viewable_id' => $blog->id, 'date' => now()->toDateString(), 'count' => 5]);
+        $blog->forceDelete();
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/analytics/top-blogs')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_the_blog_trend_fills_in_the_quiet_days(): void
+    {
+        $blog = $this->blog('A post');
+        PageViewLog::create(['viewable_type' => 'blog', 'viewable_id' => $blog->id, 'date' => now()->toDateString(), 'count' => 7]);
+
+        $response = $this->actingAs($this->admin())
+            ->getJson('/api/admin/analytics/blog-views-trend?days=7')
+            ->assertOk();
+
+        /* Seven points whatever the data, so the chart draws a line. */
+        $this->assertCount(7, $response->json('data'));
+        $this->assertSame(7, $response->json('total'));
+        $this->assertSame(0, $response->json('data.0.count'));
+    }
+
+    public function test_only_blog_views_reach_the_blog_sections(): void
+    {
+        $blog = $this->blog('A post');
+        PageViewLog::create(['viewable_type' => 'blog', 'viewable_id' => $blog->id, 'date' => now()->toDateString(), 'count' => 4]);
+
+        /* A project with the same id must not be counted as the post. */
+        PageViewLog::create(['viewable_type' => 'project', 'viewable_id' => $blog->id, 'date' => now()->toDateString(), 'count' => 99]);
+
+        $this->assertSame(4, $this->actingAs($this->admin())
+            ->getJson('/api/admin/analytics/blog-views-trend')
+            ->json('total'));
     }
 
     /** An unrecognised kind is ignored rather than stored. */
