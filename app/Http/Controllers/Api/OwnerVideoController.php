@@ -53,6 +53,8 @@ class OwnerVideoController extends Controller
             'description' => $data['description'] ?? '',
             'youtube_url' => $data['youtubeUrl'],
             'youtube_id' => $data['youtubeId'],
+            'link' => $data['link'] ?? null,
+            'tags' => $data['tags'] ?? [],
             /*
              * Published outright. These are not editorial copy waiting on a
              * reviewer; an agent adding a walkthrough means to show it, and
@@ -83,6 +85,8 @@ class OwnerVideoController extends Controller
         $video->description = $data['description'] ?? '';
         $video->youtube_url = $data['youtubeUrl'];
         $video->youtube_id = $data['youtubeId'];
+        $video->link = $data['link'] ?? null;
+        $video->tags = $data['tags'] ?? [];
         $video->save();
 
         return response()->json([
@@ -110,7 +114,25 @@ class OwnerVideoController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'youtubeUrl' => ['required', 'string', 'max:500'],
+            /* Where the video leads — the listing it walks through, the
+               project it shows. http and https only: a javascript: or
+               data: address here would run in the viewer's browser. */
+            'link' => ['nullable', 'url:http,https', 'max:500'],
+            'tags' => ['nullable', 'array', 'max:10'],
+            'tags.*' => ['required', 'string', 'max:40'],
         ]);
+
+        if (isset($data['tags'])) {
+            /* Trimmed, blanks dropped, and no repeats — the form sends
+               what was typed, and the same word twice is one tag. */
+            $data['tags'] = collect($data['tags'])
+                ->map(fn (string $tag) => trim($tag))
+                ->filter()
+                ->unique(fn (string $tag) => mb_strtolower($tag))
+                ->take(10)
+                ->values()
+                ->all();
+        }
 
         $id = Video::extractYoutubeId($data['youtubeUrl']);
 

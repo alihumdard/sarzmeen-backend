@@ -310,6 +310,86 @@ class OwnerVideoTest extends TestCase
             ->assertJsonPath('data.0.owner', null);
     }
 
+    /*
+     * The link and the tags.
+     */
+
+    public function test_a_video_keeps_its_link_and_tags(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', [
+                'title' => 'A walkthrough',
+                'youtubeUrl' => self::LINK,
+                'link' => 'https://example.com/properties/a-house',
+                'tags' => ['DHA', '10 Marla'],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.link', 'https://example.com/properties/a-house')
+            ->assertJsonPath('data.tags', ['DHA', '10 Marla']);
+    }
+
+    public function test_a_video_needs_neither_a_link_nor_tags(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])
+            ->assertCreated()
+            ->assertJsonPath('data.link', null)
+            ->assertJsonPath('data.tags', []);
+    }
+
+    public function test_blank_and_repeated_tags_are_dropped(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', [
+                'title' => 'Mine',
+                'youtubeUrl' => self::LINK,
+                'tags' => ['  DHA  ', 'dha', '10 Marla'],
+            ])
+            ->assertCreated()
+            /* Trimmed, and the same word twice is one tag. */
+            ->assertJsonPath('data.tags', ['DHA', '10 Marla']);
+    }
+
+    /**
+     * The link is rendered as an anchor on a public page, so an address
+     * that runs script is refused where it arrives.
+     */
+    public function test_a_link_that_is_not_a_web_address_is_refused(): void
+    {
+        $agent = $this->agent();
+
+        foreach (['javascript:alert(1)', 'data:text/html,<script>', 'not a url'] as $bad) {
+            $this->actingAs($agent->user)
+                ->postJson('/api/agent/videos', [
+                    'title' => 'Mine',
+                    'youtubeUrl' => self::LINK,
+                    'link' => $bad,
+                ])
+                ->assertStatus(422)
+                ->assertJsonValidationErrors('link');
+        }
+    }
+
+    public function test_more_than_ten_tags_are_refused(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', [
+                'title' => 'Mine',
+                'youtubeUrl' => self::LINK,
+                'tags' => array_map(fn (int $i) => "tag{$i}", range(1, 11)),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('tags');
+    }
+
     public function test_a_signed_out_visitor_cannot_add_a_video(): void
     {
         $this->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])

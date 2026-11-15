@@ -23,6 +23,8 @@ class Video extends Model
         'slug',
         'description',
         'youtube_url',
+        'link',
+        'tags',
         'youtube_id',
         'thumbnail',
         'status',
@@ -39,6 +41,7 @@ class Video extends Model
             // Videos publish like blog posts, so they share the status enum.
             'status' => BlogStatus::class,
             'featured' => 'boolean',
+            'tags' => 'array',
             'published_at' => 'datetime',
         ];
     }

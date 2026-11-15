@@ -27,6 +27,10 @@ class VideoResource extends JsonResource
             'description' => $this->description,
             'youtubeId' => $this->youtube_id,
             'youtubeUrl' => $this->youtube_url,
+            /* Where the video leads, and what it is about. Both belong to
+               an owner's video; the site's own guides leave them empty. */
+            'link' => $this->link,
+            'tags' => $this->tags ?? [],
             'embedUrl' => "https://www.youtube.com/embed/{$this->youtube_id}",
             'thumbnail' => $thumbnail,
             'status' => $this->status->value,
