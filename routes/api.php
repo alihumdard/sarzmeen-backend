@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Admin\PropertyController as AdminPropertyController
 use App\Http\Controllers\Api\Agency\AgentController as AgencyAgentController;
 use App\Http\Controllers\Api\Agency\ProfileController as AgencyProfileController;
 use App\Http\Controllers\Api\Agent\ProfileController as AgentProfileController;
+use App\Http\Controllers\Api\OwnerVideoCategoryController;
 use App\Http\Controllers\Api\OwnerVideoController;
 use App\Http\Controllers\Api\Agency\PropertyController as AgencyPropertyController;
 use App\Http\Controllers\Api\Auth\EmailVerificationController;
@@ -243,6 +244,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/videos', [OwnerVideoController::class, 'store']);
         Route::put('/videos/{video}', [OwnerVideoController::class, 'update']);
         Route::delete('/videos/{video}', [OwnerVideoController::class, 'destroy']);
+
+        /* Their own groupings for those videos. */
+        Route::get('/video-categories', [OwnerVideoCategoryController::class, 'index']);
+        Route::post('/video-categories', [OwnerVideoCategoryController::class, 'store']);
+        Route::put('/video-categories/{category}', [OwnerVideoCategoryController::class, 'update']);
+        Route::delete('/video-categories/{category}', [OwnerVideoCategoryController::class, 'destroy']);
     });
 
     /*
@@ -260,6 +267,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/videos', [OwnerVideoController::class, 'store']);
         Route::put('/videos/{video}', [OwnerVideoController::class, 'update']);
         Route::delete('/videos/{video}', [OwnerVideoController::class, 'destroy']);
+
+        /* Their own groupings for those videos. */
+        Route::get('/video-categories', [OwnerVideoCategoryController::class, 'index']);
+        Route::post('/video-categories', [OwnerVideoCategoryController::class, 'store']);
+        Route::put('/video-categories/{category}', [OwnerVideoCategoryController::class, 'update']);
+        Route::delete('/video-categories/{category}', [OwnerVideoCategoryController::class, 'destroy']);
     });
 
     /*
@@ -351,6 +364,9 @@ Route::middleware('auth:sanctum')->group(function () {
             ->middleware('permission:blogs.manage');
 
         // Videos are content, so they sit with the blog permission.
+        /* Review, before an owner's video reaches their page. */
+        Route::post('/videos/{video}/approve', [AdminVideoController::class, 'approve']);
+        Route::post('/videos/{video}/reject', [AdminVideoController::class, 'reject']);
         Route::apiResource('videos', AdminVideoController::class)
             ->middleware('permission:blogs.manage');
 

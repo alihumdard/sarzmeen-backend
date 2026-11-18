@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api;
 
-use App\Enums\BlogStatus;
+use App\Enums\VideoStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\VideoResource;
 use App\Models\Agency;
 use App\Models\Agent;
 use App\Models\Video;
+use App\Models\VideoCategory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -32,7 +33,7 @@ class OwnerVideoController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         return VideoResource::collection(
-            $this->scope($request)->orderBy('sort_order')->latest('id')->get()
+            $this->scope($request)->with('category')->orderBy('sort_order')->latest('id')->get()
         );
     }
 
@@ -55,13 +56,12 @@ class OwnerVideoController extends Controller
             'youtube_id' => $data['youtubeId'],
             'link' => $data['link'] ?? null,
             'tags' => $data['tags'] ?? [],
+            'video_category_id' => $this->categoryId($request, $data),
             /*
-             * Published outright. These are not editorial copy waiting on a
-             * reviewer; an agent adding a walkthrough means to show it, and
-             * a draft they could not publish would simply look broken.
+             * Waiting for an administrator. These go on a public page
+             * under the site's name, so somebody looks before they do.
              */
-            'status' => BlogStatus::Published,
-            'published_at' => now(),
+            'status' => VideoStatus::Pending,
             'sort_order' => ($this->scope($request)->max('sort_order') ?? -1) + 1,
         ]);
 
@@ -81,12 +81,35 @@ class OwnerVideoController extends Controller
 
         $data = $this->validated($request);
 
+        /*
+         * A published video edited goes back for review, because what was
+         * approved is not what would now be shown. Only when the video or
+         * where it leads changes — renaming one is not a new video.
+         */
+        $changedMaterially = $video->youtube_id !== $data['youtubeId']
+            || $video->link !== ($data['link'] ?? null);
+
         $video->title = $data['title'];
         $video->description = $data['description'] ?? '';
         $video->youtube_url = $data['youtubeUrl'];
         $video->youtube_id = $data['youtubeId'];
         $video->link = $data['link'] ?? null;
         $video->tags = $data['tags'] ?? [];
+        $video->video_category_id = $this->categoryId($request, $data);
+
+        if ($changedMaterially && $video->status === VideoStatus::Published) {
+            $video->status = VideoStatus::Pending;
+            $video->published_at = null;
+            $video->review_note = null;
+        }
+
+        /* A rejected video resubmitted is waiting again, and the old
+           note no longer describes it. */
+        if ($video->status === VideoStatus::Rejected) {
+            $video->status = VideoStatus::Pending;
+            $video->review_note = null;
+        }
+
         $video->save();
 
         return response()->json([
@@ -120,6 +143,7 @@ class OwnerVideoController extends Controller
             'link' => ['nullable', 'url:http,https', 'max:500'],
             'tags' => ['nullable', 'array', 'max:10'],
             'tags.*' => ['required', 'string', 'max:40'],
+            'categoryId' => ['nullable', 'integer'],
         ]);
 
         if (isset($data['tags'])) {
@@ -145,6 +169,27 @@ class OwnerVideoController extends Controller
         $data['youtubeId'] = $id;
 
         return $data;
+    }
+
+    /**
+     * The category to file this video under, or null.
+     *
+     * Checked against this account's own categories: an id belonging to
+     * another agency would otherwise file a video under their grouping.
+     */
+    private function categoryId(Request $request, array $data): ?int
+    {
+        if (empty($data['categoryId'])) {
+            return null;
+        }
+
+        $owner = $this->owner($request);
+
+        $category = VideoCategory::where('id', $data['categoryId'])
+            ->where($owner['column'], $owner['id'])
+            ->first();
+
+        return $category?->id;
     }
 
     /** Which column holds this account's videos, and the id in it. */

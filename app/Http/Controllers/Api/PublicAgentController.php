@@ -72,6 +72,7 @@ class PublicAgentController extends Controller
            this page is the only place they are shown. */
         $data['videos'] = \App\Http\Resources\VideoResource::collection(
             \App\Models\Video::published()
+                ->with('category')
                 ->where('agent_id', $agent->id)
                 ->orderBy('sort_order')
                 ->latest('id')

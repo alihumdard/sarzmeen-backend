@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\BlogStatus;
+use App\Enums\VideoStatus;
 use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,6 +19,10 @@ class Video extends Model
     protected $fillable = [
         'agent_id',
         'agency_id',
+        'video_category_id',
+        'review_note',
+        'reviewed_at',
+        'reviewed_by',
         'title',
         'slug',
         'description',
@@ -38,17 +42,17 @@ class Video extends Model
     protected function casts(): array
     {
         return [
-            // Videos publish like blog posts, so they share the status enum.
-            'status' => BlogStatus::class,
+            'status' => VideoStatus::class,
             'featured' => 'boolean',
             'tags' => 'array',
             'published_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
     public function scopePublished($query)
     {
-        return $query->where('status', BlogStatus::Published);
+        return $query->where('status', VideoStatus::Published);
     }
 
     /**
@@ -60,6 +64,17 @@ class Video extends Model
     public function scopeEditorial($query)
     {
         return $query->whereNull('agent_id')->whereNull('agency_id');
+    }
+
+    /** Videos an administrator has still to look at. */
+    public function scopePending($query)
+    {
+        return $query->where('status', VideoStatus::Pending);
+    }
+
+    public function category(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(VideoCategory::class, 'video_category_id');
     }
 
     public function agent(): \Illuminate\Database\Eloquent\Relations\BelongsTo

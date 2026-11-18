@@ -34,6 +34,15 @@ class VideoResource extends JsonResource
             'embedUrl' => "https://www.youtube.com/embed/{$this->youtube_id}",
             'thumbnail' => $thumbnail,
             'status' => $this->status->value,
+            'statusLabel' => $this->status->label(),
+            /* Why it was turned down, for its owner to read and act on. */
+            'reviewNote' => $this->review_note,
+            'category' => $this->whenLoaded('category', fn () => $this->category ? [
+                'id' => (string) $this->category->id,
+                'name' => $this->category->name,
+                'slug' => $this->category->slug,
+            ] : null),
+            'categoryId' => $this->video_category_id ? (string) $this->video_category_id : null,
             'featured' => $this->featured,
             'views' => $this->views,
             'sortOrder' => $this->sort_order,

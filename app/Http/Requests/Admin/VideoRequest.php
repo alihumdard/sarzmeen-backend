@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
-use App\Enums\BlogStatus;
+use App\Enums\VideoStatus;
 use App\Models\Video;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -43,7 +43,7 @@ class VideoRequest extends FormRequest
                 'dimensions:min_width=400,min_height=400',
             ],
 
-            'status' => ['required', Rule::enum(BlogStatus::class)],
+            'status' => ['required', Rule::enum(VideoStatus::class)],
             'featured' => ['boolean'],
             'sortOrder' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'metaTitle' => ['nullable', 'string', 'max:70'],

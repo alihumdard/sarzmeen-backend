@@ -157,9 +157,17 @@ class OwnerVideoTest extends TestCase
         $agent = $this->agent();
         $this->editorial('A site video');
 
-        $this->actingAs($agent->user)
+        $id = $this->actingAs($agent->user)
             ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])
-            ->assertCreated();
+            ->assertCreated()
+            ->json('data.id');
+
+        /* It waits for an administrator before anyone sees it. */
+        $this->getJson("/api/agents/{$agent->slug}")
+            ->assertOk()
+            ->assertJsonCount(0, 'data.videos');
+
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve")->assertOk();
 
         /* Theirs, and only theirs: the editorial one is not swept in. */
         $this->getJson("/api/agents/{$agent->slug}")
@@ -172,9 +180,12 @@ class OwnerVideoTest extends TestCase
     {
         $agency = $this->agency();
 
-        $this->actingAs($agency->owner)
+        $id = $this->actingAs($agency->owner)
             ->postJson('/api/agency/videos', ['title' => 'Ours', 'youtubeUrl' => self::LINK])
-            ->assertCreated();
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve")->assertOk();
 
         $this->getJson("/api/agencies/{$agency->slug}")
             ->assertOk()

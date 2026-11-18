@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Enums\BlogStatus;
+use App\Enums\VideoStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VideoRequest;
 use App\Http\Resources\VideoResource;
@@ -67,6 +67,46 @@ class VideoController extends Controller
         return new VideoResource($video->fresh());
     }
 
+    /**
+     * Approve an owner's video, putting it on their page.
+     *
+     * Only a video waiting for review: approving one already published
+     * would reset the date it went up, and the site's own guides never
+     * enter review at all.
+     */
+    public function approve(Request $request, Video $video): JsonResponse
+    {
+        if ($video->status !== VideoStatus::Pending) {
+            abort(422, 'That video is not waiting for review.');
+        }
+
+        $video->status = VideoStatus::Published;
+        $video->published_at = now();
+        $video->review_note = null;
+        $video->reviewed_at = now();
+        $video->reviewed_by = $request->user()->id;
+        $video->save();
+
+        return response()->json(['data' => (new VideoResource($video))->resolve($request)]);
+    }
+
+    /** Turn one down, with a reason its owner can read. */
+    public function reject(Request $request, Video $video): JsonResponse
+    {
+        $data = $request->validate([
+            'note' => ['required', 'string', 'max:500'],
+        ]);
+
+        $video->status = VideoStatus::Rejected;
+        $video->published_at = null;
+        $video->review_note = trim($data['note']);
+        $video->reviewed_at = now();
+        $video->reviewed_by = $request->user()->id;
+        $video->save();
+
+        return response()->json(['data' => (new VideoResource($video))->resolve($request)]);
+    }
+
     public function destroy(Video $video): JsonResponse
     {
         if ($video->thumbnail) {
@@ -86,7 +126,7 @@ class VideoController extends Controller
     private function attributes(VideoRequest $request, ?Video $existing = null): array
     {
         $data = $request->validated();
-        $status = BlogStatus::from($data['status']);
+        $status = VideoStatus::from($data['status']);
 
         $attributes = [
             'title' => $data['title'],
@@ -120,7 +160,7 @@ class VideoController extends Controller
          * afterwards — re-publishing an edited video should not reorder it
          * above everything written since.
          */
-        if ($status === BlogStatus::Published && ! $existing?->published_at) {
+        if ($status === VideoStatus::Published && ! $existing?->published_at) {
             $attributes['published_at'] = now();
         }
 
