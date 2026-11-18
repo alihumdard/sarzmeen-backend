@@ -60,6 +60,7 @@ use App\Http\Controllers\Api\Admin\ProjectImageController as AdminProjectImageCo
 use App\Http\Controllers\Api\Admin\ProjectDocumentController as AdminProjectDocumentController;
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Api\Admin\VideoCategoryController as AdminVideoCategoryController;
 use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController as AdminBlogCategoryController;
 use App\Http\Controllers\Api\Admin\BlogTagController as AdminBlogTagController;
@@ -96,6 +97,8 @@ Route::get('/blog-tags', [BlogController::class, 'tags']);
 
 // Public video library
 Route::get('/videos', [PublicVideoController::class, 'index']);
+// Above /videos/{slug}, or "categories" is read as a slug.
+Route::get('/videos/categories', [PublicVideoController::class, 'categories']);
 // Above /videos/{slug}, or "related" is read as a slug.
 Route::get('/videos/{slug}/related', [PublicVideoController::class, 'related']);
 Route::get('/videos/{slug}', [PublicVideoController::class, 'show']);
@@ -365,6 +368,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Videos are content, so they sit with the blog permission.
         /* Review, before an owner's video reaches their page. */
+        /* The site's own video categories; an owner's are theirs. */
+        Route::get('/video-categories', [AdminVideoCategoryController::class, 'index']);
+        Route::post('/video-categories', [AdminVideoCategoryController::class, 'store']);
+        Route::put('/video-categories/{category}', [AdminVideoCategoryController::class, 'update']);
+        Route::delete('/video-categories/{category}', [AdminVideoCategoryController::class, 'destroy']);
+
         Route::post('/videos/{video}/approve', [AdminVideoController::class, 'approve']);
         Route::post('/videos/{video}/reject', [AdminVideoController::class, 'reject']);
         Route::apiResource('videos', AdminVideoController::class)

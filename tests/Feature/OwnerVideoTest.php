@@ -107,10 +107,10 @@ class OwnerVideoTest extends TestCase
     }
 
     /*
-     * The separation, from both directions.
+     * The library, which an owner's video reaches only once approved.
      */
 
-    public function test_an_owners_video_stays_out_of_the_library(): void
+    public function test_an_unapproved_video_stays_out_of_the_library(): void
     {
         $agent = $this->agent();
         $this->editorial('A site video');
@@ -119,37 +119,73 @@ class OwnerVideoTest extends TestCase
             ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])
             ->assertCreated();
 
+        /* Waiting for review, so only the site's own is listed. */
         $this->getJson('/api/videos')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.title', 'A site video');
     }
 
-    public function test_an_owners_video_cannot_be_opened_in_the_library_by_its_slug(): void
-    {
-        $agent = $this->agent();
-
-        $slug = $this->actingAs($agent->user)
-            ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])
-            ->json('data.slug');
-
-        /* The list is not enough on its own: the slug route is the other
-           door into the same page. */
-        $this->getJson("/api/videos/{$slug}")->assertNotFound();
-    }
-
-    public function test_an_owners_video_is_not_offered_as_related(): void
+    public function test_an_approved_video_joins_the_library(): void
     {
         $agent = $this->agent();
         $this->editorial('A site video');
 
-        $this->actingAs($agent->user)
+        $id = $this->actingAs($agent->user)
             ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])
-            ->assertCreated();
+            ->json('data.id');
 
-        $this->getJson('/api/videos/a-site-video/related')
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve")->assertOk();
+
+        $titles = collect($this->getJson('/api/videos')->json('data'))->pluck('title');
+
+        $this->assertTrue($titles->contains('Mine'));
+        $this->assertTrue($titles->contains('A site video'));
+    }
+
+    /** The site's own come first, whoever posted most recently. */
+    public function test_the_sites_own_videos_are_listed_first(): void
+    {
+        $agent = $this->agent();
+
+        $id = $this->actingAs($agent->user)
+            ->postJson('/api/agent/videos', ['title' => 'Mine', 'youtubeUrl' => self::LINK])
+            ->json('data.id');
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve");
+
+        /* Added after the owner's, and still expected at the top. */
+        $this->editorial('A site video');
+
+        $this->getJson('/api/videos')
             ->assertOk()
-            ->assertJsonCount(0, 'data');
+            ->assertJsonPath('data.0.title', 'A site video');
+    }
+
+    public function test_an_approved_video_carries_its_owner(): void
+    {
+        $agency = $this->agency();
+
+        $id = $this->actingAs($agency->owner)
+            ->postJson('/api/agency/videos', ['title' => 'Ours', 'youtubeUrl' => self::LINK])
+            ->json('data.id');
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve");
+
+        $video = collect($this->getJson('/api/videos')->json('data'))
+            ->firstWhere('title', 'Ours');
+
+        /* So a viewer can reach the rest of that agency's videos. */
+        $this->assertSame('agency', $video['owner']['kind']);
+        $this->assertSame('An Agency', $video['owner']['name']);
+        $this->assertSame('/agencies/'.$agency->slug, $video['owner']['href']);
+    }
+
+    public function test_a_site_video_has_no_owner(): void
+    {
+        $this->editorial('A site video');
+
+        $video = $this->getJson('/api/videos')->json('data.0');
+
+        $this->assertNull($video['owner']);
     }
 
     public function test_the_agents_page_shows_their_videos(): void

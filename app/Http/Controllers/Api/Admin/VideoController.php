@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\VideoRequest;
 use App\Http\Resources\VideoResource;
 use App\Models\Video;
+use App\Models\VideoCategory;
 use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -123,6 +124,28 @@ class VideoController extends Controller
      *
      * @return array<string, mixed>
      */
+    /** One of the site's own categories, or none. */
+    private function categoryId(array $data): ?int
+    {
+        if (empty($data['categoryId'])) {
+            return null;
+        }
+
+        return VideoCategory::editorial()->where('id', $data['categoryId'])->value('id');
+    }
+
+    /** Trimmed, blanks dropped, and no repeats however they are cased. */
+    private function tags(array $data): array
+    {
+        return collect($data['tags'] ?? [])
+            ->map(fn (string $tag) => trim($tag))
+            ->filter()
+            ->unique(fn (string $tag) => mb_strtolower($tag))
+            ->take(10)
+            ->values()
+            ->all();
+    }
+
     private function attributes(VideoRequest $request, ?Video $existing = null): array
     {
         $data = $request->validated();
@@ -136,6 +159,11 @@ class VideoController extends Controller
             'youtube_id' => Video::extractYoutubeId($data['youtubeUrl']),
             'status' => $status,
             'featured' => (bool) ($data['featured'] ?? false),
+            /* Only the site's own categories: an agency's grouping is
+               theirs, and a guide filed under it would appear to belong
+               to them. */
+            'video_category_id' => $this->categoryId($data),
+            'tags' => $this->tags($data),
             'sort_order' => (int) ($data['sortOrder'] ?? 0),
             'meta_title' => $data['metaTitle'] ?? null,
             'meta_description' => $data['metaDescription'] ?? null,

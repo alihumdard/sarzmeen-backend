@@ -74,6 +74,9 @@ class VideoResource extends JsonResource
                 'kind' => 'agent',
                 'name' => $agent?->user?->name ?? 'Unknown agent',
                 'slug' => $agent?->slug,
+                /* Where their other videos are; null when the record has
+                   gone, so the card shows a name without a dead link. */
+                'href' => $agent?->slug ? '/agents/'.$agent->slug : null,
             ];
         }
 
@@ -84,6 +87,7 @@ class VideoResource extends JsonResource
                 'kind' => 'agency',
                 'name' => $agency?->name ?? 'Unknown agency',
                 'slug' => $agency?->slug,
+                'href' => $agency?->slug ? '/agencies/'.$agency->slug : null,
             ];
         }
 

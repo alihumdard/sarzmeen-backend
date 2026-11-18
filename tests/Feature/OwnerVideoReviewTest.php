@@ -335,6 +335,121 @@ class OwnerVideoReviewTest extends TestCase
         $this->assertNull($video->video_category_id);
     }
 
+    /*
+     * The public library: everyone's categories, grouped by owner.
+     */
+
+    public function test_the_library_groups_categories_by_owner(): void
+    {
+        $agency = $this->agency();
+
+        /* The site's own grouping, with a guide in it. */
+        $own = VideoCategory::create([
+            'name' => 'Guides',
+            'slug' => 'guides',
+            'sort_order' => 0,
+        ]);
+        Video::create([
+            'title' => 'A guide',
+            'slug' => 'a-guide',
+            'youtube_url' => self::LINK,
+            'youtube_id' => 'dQw4w9WgXcQ',
+            'video_category_id' => $own->id,
+            'status' => VideoStatus::Published,
+            'published_at' => now(),
+        ]);
+
+        $theirs = $this->actingAs($agency->owner)
+            ->postJson('/api/agency/video-categories', ['name' => 'Walkthroughs'])
+            ->json('data.id');
+
+        $id = $this->actingAs($agency->owner)
+            ->postJson('/api/agency/videos', [
+                'title' => 'Ours',
+                'youtubeUrl' => self::LINK,
+                'categoryId' => $theirs,
+            ])
+            ->json('data.id');
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve");
+
+        $groups = $this->getJson('/api/videos/categories')->assertOk()->json('data');
+
+        /* The site's own first, so a visitor is not made to read a dozen
+           agency groupings before reaching the guides. */
+        $this->assertSame('sarzameen', $groups[0]['key']);
+        $this->assertSame('Sarzameen', $groups[0]['label']);
+        $this->assertSame('Guides', $groups[0]['categories'][0]['name']);
+
+        $this->assertSame('An Agency', $groups[1]['label']);
+        $this->assertSame('Walkthroughs', $groups[1]['categories'][0]['name']);
+    }
+
+    public function test_a_category_with_nothing_published_is_left_out(): void
+    {
+        $agency = $this->agency();
+
+        $categoryId = $this->actingAs($agency->owner)
+            ->postJson('/api/agency/video-categories', ['name' => 'Empty'])
+            ->json('data.id');
+
+        /* Added but never approved, so the category leads nowhere. */
+        $this->actingAs($agency->owner)->postJson('/api/agency/videos', [
+            'title' => 'Waiting',
+            'youtubeUrl' => self::LINK,
+            'categoryId' => $categoryId,
+        ]);
+
+        $this->getJson('/api/videos/categories')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_the_library_filters_by_category(): void
+    {
+        $agency = $this->agency();
+
+        $categoryId = $this->actingAs($agency->owner)
+            ->postJson('/api/agency/video-categories', ['name' => 'Walkthroughs'])
+            ->json('data.id');
+
+        foreach ([['In it', $categoryId], ['Not in it', null]] as [$title, $category]) {
+            $id = $this->actingAs($agency->owner)
+                ->postJson('/api/agency/videos', array_filter([
+                    'title' => $title,
+                    'youtubeUrl' => self::LINK,
+                    'categoryId' => $category,
+                ]))
+                ->json('data.id');
+            $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve");
+        }
+
+        $this->getJson('/api/videos?category=walkthroughs')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'In it');
+    }
+
+    /** Tags are shown nowhere, so search is all they are for. */
+    public function test_the_library_searches_tags(): void
+    {
+        $agency = $this->agency();
+
+        $id = $this->actingAs($agency->owner)
+            ->postJson('/api/agency/videos', [
+                'title' => 'A walkthrough',
+                'youtubeUrl' => self::LINK,
+                'tags' => ['Gulberg'],
+            ])
+            ->json('data.id');
+        $this->actingAs($this->admin())->postJson("/api/admin/videos/{$id}/approve");
+
+        /* The word is in neither title nor description. */
+        $this->getJson('/api/videos?search=Gulberg')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'A walkthrough');
+    }
+
     public function test_an_owner_cannot_touch_another_owners_category(): void
     {
         $mine = $this->agent();

@@ -43,6 +43,13 @@ class VideoRequest extends FormRequest
                 'dimensions:min_width=400,min_height=400',
             ],
 
+            /* The site's own grouping for this guide, and the words it
+               can be found by. Both have been on an owner's videos since
+               they were added; the site's own had neither. */
+            'categoryId' => ['nullable', 'integer'],
+            'tags' => ['nullable', 'array', 'max:10'],
+            'tags.*' => ['required', 'string', 'max:40'],
+
             'status' => ['required', Rule::enum(VideoStatus::class)],
             'featured' => ['boolean'],
             'sortOrder' => ['nullable', 'integer', 'min:0', 'max:9999'],
