@@ -78,19 +78,28 @@ class VideoController extends Controller
         $groups = [];
 
         foreach ($categories as $category) {
-            [$key, $label] = match (true) {
+            /* The kind travels with the group: two owners may share a
+               name, and without it they read as one. */
+            [$key, $label, $kind] = match (true) {
                 $category->agency_id !== null => [
                     'agency-'.$category->agency_id,
                     $category->agency?->name ?? 'An agency',
+                    'agency',
                 ],
                 $category->agent_id !== null => [
                     'agent-'.$category->agent_id,
                     $category->agent?->user?->name ?? 'An agent',
+                    'agent',
                 ],
-                default => ['sarzameen', 'Sarzameen'],
+                default => ['sarzameen', 'Sarzameen', 'site'],
             };
 
-            $groups[$key] ??= ['key' => $key, 'label' => $label, 'categories' => []];
+            $groups[$key] ??= [
+                'key' => $key,
+                'label' => $label,
+                'kind' => $kind,
+                'categories' => [],
+            ];
 
             $groups[$key]['categories'][] = [
                 'id' => (string) $category->id,
