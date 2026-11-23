@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\PropertyController;
 use App\Http\Controllers\Api\PropertySchemaController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\BlogController;
+use App\Http\Controllers\Api\SocietyMapController;
 use App\Http\Controllers\Api\VideoController as PublicVideoController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\SearchController;
@@ -60,6 +61,7 @@ use App\Http\Controllers\Api\Admin\ProjectImageController as AdminProjectImageCo
 use App\Http\Controllers\Api\Admin\ProjectDocumentController as AdminProjectDocumentController;
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
+use App\Http\Controllers\Api\Admin\SocietyMapController as AdminSocietyMapController;
 use App\Http\Controllers\Api\Admin\VideoCategoryController as AdminVideoCategoryController;
 use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController as AdminBlogCategoryController;
@@ -92,6 +94,13 @@ Route::get('/projects/{slug}', [ProjectController::class, 'show']);
 // Public blog routes
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogController::class, 'show']);
+
+/* Society maps. `cities` is declared before `{slug}` so the word is not
+   swallowed as a map's slug. */
+Route::get('/society-maps/cities', [SocietyMapController::class, 'cities']);
+Route::get('/society-maps', [SocietyMapController::class, 'index']);
+Route::get('/society-maps/{slug}', [SocietyMapController::class, 'show']);
+Route::post('/society-maps/{slug}/download', [SocietyMapController::class, 'download']);
 Route::get('/blog-categories', [BlogController::class, 'categories']);
 Route::get('/blog-tags', [BlogController::class, 'tags']);
 
@@ -288,7 +297,7 @@ Route::middleware('auth:sanctum')->group(function () {
         .'|properties.edit.own|properties.edit.any|properties.publish'
         .'|projects.edit.own|projects.edit.any|blogs.manage'
         .'|inquiries.view.own|inquiries.view.any|testimonials.manage|faqs.manage|settings.manage'
-        .'|services.manage'
+        .'|services.manage|society_maps.manage'
     )->prefix('admin')->group(function () {
         // Dashboard figures; the controller scopes them to the caller's role.
         Route::get('/stats', AdminStatsController::class);
@@ -365,6 +374,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Blog CRUD
         Route::apiResource('blogs', AdminBlogController::class)
             ->middleware('permission:blogs.manage');
+
+        Route::apiResource('society-maps', AdminSocietyMapController::class)
+            ->parameters(['society-maps' => 'society_map'])
+            ->middleware('permission:society_maps.manage');
 
         // Videos are content, so they sit with the blog permission.
         /* Review, before an owner's video reaches their page. */
