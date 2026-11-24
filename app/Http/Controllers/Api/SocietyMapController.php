@@ -52,6 +52,54 @@ class SocietyMapController extends Controller
     }
 
     /**
+     * The most-read maps, grouped by city.
+     *
+     * A reader who does not know what they are looking for is best
+     * served by what everybody else opened.
+     */
+    public function popular(Request $request): JsonResponse
+    {
+        $perCity = max(1, min($request->integer('per_city', 6), 12));
+
+        $maps = SocietyMap::published()
+            ->with(['location', 'city'])
+            ->whereNotNull('city_id')
+            ->orderByDesc('views')
+            ->get()
+            ->groupBy('city_id');
+
+        $groups = [];
+
+        foreach ($maps as $cityId => $cityMaps) {
+            $city = $cityMaps->first()->city;
+
+            if (! $city) {
+                continue;
+            }
+
+            $groups[] = [
+                'city' => [
+                    'id' => (string) $city->id,
+                    'name' => $city->name,
+                    'slug' => $city->slug,
+                ],
+                'total' => $cityMaps->count(),
+                'maps' => $cityMaps->take($perCity)->map(fn (SocietyMap $m) => [
+                    'id' => (string) $m->id,
+                    'slug' => $m->slug,
+                    'title' => $m->location?->name ?? $m->title,
+                    'views' => (int) $m->views,
+                ])->values()->all(),
+            ];
+        }
+
+        /* Busiest city first: that is the one most readers want. */
+        usort($groups, fn ($a, $b) => $b['total'] <=> $a['total']);
+
+        return response()->json(['data' => $groups]);
+    }
+
+    /**
      * Every published map, or those of one city.
      */
     public function index(Request $request): JsonResponse
@@ -93,6 +141,37 @@ class SocietyMapController extends Controller
 
         $map->increment('views');
 
+        /* Other maps of the same scheme: somebody reading Bahria Orchard
+           usually wants a phase of it, and would otherwise have to go
+           back to the listing and guess at the name. Siblings share a
+           parent location; the scheme itself counts as one when a phase
+           is what is open. */
+        $siblings = collect();
+
+        if ($map->location) {
+            $familyIds = Location::query()
+                ->where('parent_id', $map->location->parent_id)
+                ->whereKeyNot($map->location_id)
+                ->pluck('id');
+
+            if ($map->location->parent_id) {
+                $familyIds->push($map->location->parent_id);
+            }
+
+            $familyIds = $familyIds->merge(
+                Location::where('parent_id', $map->location_id)->pluck('id')
+            );
+
+            if ($familyIds->isNotEmpty()) {
+                $siblings = SocietyMap::published()
+                    ->with('location')
+                    ->whereIn('location_id', $familyIds)
+                    ->ordered()
+                    ->limit(12)
+                    ->get();
+            }
+        }
+
         /* The society's own listings. Properties point at a location, so
            these come from the map's society rather than from any field
            the map itself would have to carry. */
@@ -110,6 +189,7 @@ class SocietyMapController extends Controller
         return response()->json([
             'data' => (new SocietyMapResource($map))->resolve(),
             'properties' => PropertyResource::collection($properties)->resolve(),
+            'related' => SocietyMapResource::collection($siblings)->resolve(),
         ]);
     }
 

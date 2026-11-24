@@ -373,6 +373,76 @@ class SocietyMapTest extends TestCase
         $this->assertCount(0, $map->fresh()->blogs);
     }
 
+    public function test_a_phase_links_to_the_scheme_and_its_other_phases(): void
+    {
+        $society = $this->society('Lahore', 'Bahria Orchard');
+        $this->map($society);
+
+        /* Phases hang off the scheme itself. */
+        $phase1 = Location::create([
+            'parent_id' => $society->id,
+            'name' => 'Bahria Orchard Phase 1',
+            'slug' => 'bo-p1',
+            'type' => 'society',
+            'status' => 'active',
+        ]);
+        $phase2 = Location::create([
+            'parent_id' => $society->id,
+            'name' => 'Bahria Orchard Phase 2',
+            'slug' => 'bo-p2',
+            'type' => 'society',
+            'status' => 'active',
+        ]);
+
+        $this->map($phase1);
+        $map2 = $this->map($phase2);
+
+        /* From the scheme, both phases. */
+        $fromScheme = $this->getJson('/api/society-maps/bahria-orchard-map')->assertOk();
+        $this->assertCount(2, $fromScheme->json('related'));
+
+        /* From a phase, the scheme and the sibling phase. */
+        $fromPhase = $this->getJson("/api/society-maps/{$map2->slug}")->assertOk();
+        $this->assertCount(2, $fromPhase->json('related'));
+    }
+
+    public function test_an_unrelated_map_is_not_listed_as_related(): void
+    {
+        $this->map($this->society('Lahore', 'Bahria Orchard'));
+        $other = $this->map($this->society('Karachi', 'Gulshan'));
+
+        $response = $this->getJson("/api/society-maps/{$other->slug}")->assertOk();
+
+        $this->assertSame([], $response->json('related'));
+    }
+
+    public function test_the_most_viewed_maps_are_grouped_by_city(): void
+    {
+        $quiet = $this->map($this->society('Lahore', 'Bahria Orchard'));
+        $busy = $this->map($this->societyUnder($quiet->location->parent->parent, 'DHA'));
+
+        /* `views` is not fillable on purpose — nothing posted from a
+           form should set it — so write it directly. */
+        $busy->forceFill(['views' => 90])->save();
+        $quiet->forceFill(['views' => 3])->save();
+
+        $response = $this->getJson('/api/society-maps/popular')->assertOk();
+
+        $this->assertSame('Lahore', $response->json('data.0.city.name'));
+        $this->assertSame('DHA', $response->json('data.0.maps.0.title'));
+        $this->assertSame(90, $response->json('data.0.maps.0.views'));
+    }
+
+    public function test_a_draft_is_not_among_the_most_viewed(): void
+    {
+        $map = $this->map($this->society(), ['status' => 'draft', 'published_at' => null]);
+        $map->forceFill(['views' => 500])->save();
+
+        $this->getJson('/api/society-maps/popular')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_a_visitor_cannot_manage_maps(): void
     {
         $this->postJson('/api/admin/society-maps', [])->assertUnauthorized();

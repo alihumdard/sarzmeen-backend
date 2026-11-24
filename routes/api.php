@@ -98,6 +98,7 @@ Route::get('/blogs/{slug}', [BlogController::class, 'show']);
 /* Society maps. `cities` is declared before `{slug}` so the word is not
    swallowed as a map's slug. */
 Route::get('/society-maps/cities', [SocietyMapController::class, 'cities']);
+Route::get('/society-maps/popular', [SocietyMapController::class, 'popular']);
 Route::get('/society-maps', [SocietyMapController::class, 'index']);
 Route::get('/society-maps/{slug}', [SocietyMapController::class, 'show']);
 Route::post('/society-maps/{slug}/download', [SocietyMapController::class, 'download']);
