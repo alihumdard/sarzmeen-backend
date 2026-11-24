@@ -99,7 +99,10 @@ class SocietyMapController extends Controller
         $properties = Property::query()
             ->where('status', 'published')
             ->where('location_id', $map->location_id)
-            ->with(['location', 'images', 'propertyType'])
+            /* `owner` feeds the agent block on a property card, which
+               reads its slug without checking: leaving it off crashed
+               the page rather than hiding the block. */
+            ->with(['location', 'images', 'propertyType', 'owner.agent'])
             ->latest()
             ->limit(8)
             ->get();
