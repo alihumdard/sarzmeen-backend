@@ -310,6 +310,69 @@ class SocietyMapTest extends TestCase
         $this->assertStringContainsString('Fine', $stored->description);
     }
 
+    public function test_blogs_are_attached_and_come_back_on_the_page(): void
+    {
+        Storage::fake('public');
+
+        $society = $this->society();
+        $map = $this->map($society);
+
+        $blog = \App\Models\Blog::create([
+            'title' => 'Bahria Town price trends',
+            'slug' => 'bahria-town-price-trends',
+            'excerpt' => 'What prices did this year.',
+            'content' => '<p>Up.</p>',
+            'status' => 'published',
+            'author_id' => $this->admin()->id,
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->putJson("/api/admin/society-maps/{$map->id}", [
+                'title' => $map->title,
+                'status' => 'published',
+                'blogIds' => [$blog->id],
+            ])
+            ->assertOk();
+
+        /* The editor reads them back to show what is already attached. */
+        $this->actingAs($this->admin())
+            ->getJson("/api/admin/society-maps/{$map->id}")
+            ->assertOk()
+            ->assertJsonPath('data.blogs.0.title', 'Bahria Town price trends');
+
+        $this->getJson("/api/society-maps/{$map->slug}")
+            ->assertOk()
+            ->assertJsonPath('data.blogs.0.title', 'Bahria Town price trends');
+    }
+
+    public function test_clearing_every_blog_detaches_them(): void
+    {
+        Storage::fake('public');
+
+        $map = $this->map($this->society());
+        $blog = \App\Models\Blog::create([
+            'title' => 'A post',
+            'slug' => 'a-post',
+            'excerpt' => 'x',
+            'content' => '<p>x</p>',
+            'status' => 'published',
+            'author_id' => $this->admin()->id,
+            'published_at' => now(),
+        ]);
+        $map->blogs()->sync([$blog->id]);
+
+        $this->actingAs($this->admin())
+            ->putJson("/api/admin/society-maps/{$map->id}", [
+                'title' => $map->title,
+                'status' => 'published',
+                'blogIds' => [],
+            ])
+            ->assertOk();
+
+        $this->assertCount(0, $map->fresh()->blogs);
+    }
+
     public function test_a_visitor_cannot_manage_maps(): void
     {
         $this->postJson('/api/admin/society-maps', [])->assertUnauthorized();
