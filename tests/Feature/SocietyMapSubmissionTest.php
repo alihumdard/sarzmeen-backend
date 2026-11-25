@@ -10,6 +10,8 @@ use App\Models\SocietyMapSubmission;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use App\Notifications\SocietyMapSubmissionReviewedNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -318,6 +320,96 @@ class SocietyMapSubmissionTest extends TestCase
         $withPhoto = SocietyMapSubmission::where('society_name', 'Second Scheme')->firstOrFail();
         $this->assertNotNull($withPhoto->contact_photo);
         Storage::disk('public')->assertExists($withPhoto->contact_photo);
+    }
+
+    public function test_the_sender_is_told_when_their_map_is_published(): void
+    {
+        Storage::fake('public');
+        Notification::fake();
+
+        $society = $this->society();
+        $this->postJson('/api/society-map-submissions', $this->payload())->assertCreated();
+        $submission = SocietyMapSubmission::firstOrFail();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/society-map-submissions/{$submission->id}/approve", [
+                'locationId' => $society->id,
+                'title' => 'Bahria Orchard Map',
+            ])
+            ->assertOk()
+            ->assertJsonPath('notified', true);
+
+        Notification::assertSentOnDemand(
+            SocietyMapSubmissionReviewedNotification::class,
+            fn ($n, $channels, $notifiable) => $notifiable->routes['mail'] === 'imran@example.com',
+        );
+    }
+
+    public function test_the_sender_is_told_why_it_was_turned_down(): void
+    {
+        Storage::fake('public');
+        Notification::fake();
+
+        $this->postJson('/api/society-map-submissions', $this->payload())->assertCreated();
+        $submission = SocietyMapSubmission::firstOrFail();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/society-map-submissions/{$submission->id}/reject", [
+                'note' => 'The image is too small to read plot numbers.',
+            ])
+            ->assertOk();
+
+        /* A rejection is useless to the sender unless they learn why. */
+        Notification::assertSentOnDemand(SocietyMapSubmissionReviewedNotification::class);
+    }
+
+    public function test_a_sender_without_an_email_is_flagged_rather_than_mailed(): void
+    {
+        Storage::fake('public');
+        Notification::fake();
+
+        $this->postJson('/api/society-map-submissions', $this->payload(['contactEmail' => null]))
+            ->assertCreated();
+        $submission = SocietyMapSubmission::firstOrFail();
+
+        /* The address is optional, so somebody has to ring them instead;
+           the admin list says which ones those are. */
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/society-map-submissions')
+            ->assertOk()
+            ->assertJsonPath('data.0.canEmail', false);
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/society-map-submissions/{$submission->id}/reject", ['note' => 'No.'])
+            ->assertOk()
+            ->assertJsonPath('notified', false);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_a_signed_in_sender_is_notified_through_their_account(): void
+    {
+        Storage::fake('public');
+        Notification::fake();
+
+        $user = User::factory()->create();
+        $society = $this->society();
+
+        $this->actingAs($user)
+            ->postJson('/api/society-map-submissions', $this->payload())
+            ->assertCreated();
+
+        $submission = SocietyMapSubmission::firstOrFail();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/society-map-submissions/{$submission->id}/approve", [
+                'locationId' => $society->id,
+                'title' => 'Bahria Orchard Map',
+            ])
+            ->assertOk();
+
+        /* So it also reaches their notifications on the site. */
+        Notification::assertSentTo($user, SocietyMapSubmissionReviewedNotification::class);
     }
 
     public function test_a_visitor_cannot_review_submissions(): void

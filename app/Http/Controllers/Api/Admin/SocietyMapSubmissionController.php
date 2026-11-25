@@ -9,9 +9,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Location;
 use App\Models\SocietyMap;
 use App\Models\SocietyMapSubmission;
+use App\Notifications\SocietyMapSubmissionReviewedNotification;
 use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -109,9 +111,12 @@ class SocietyMapSubmissionController extends Controller
             'reviewed_at' => now(),
         ]);
 
+        $this->tellSender($submission->fresh(), $map->slug);
+
         return response()->json([
             'message' => 'Published.',
             'mapSlug' => $map->slug,
+            'notified' => $submission->contact_email !== null,
         ]);
     }
 
@@ -135,7 +140,12 @@ class SocietyMapSubmissionController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        return response()->json(['message' => 'Submission rejected.']);
+        $this->tellSender($submission->fresh(), null);
+
+        return response()->json([
+            'message' => 'Submission rejected.',
+            'notified' => $submission->contact_email !== null,
+        ]);
     }
 
     public function destroy(SocietyMapSubmission $submission): JsonResponse
@@ -156,6 +166,32 @@ class SocietyMapSubmissionController extends Controller
         $submission->delete();
 
         return response()->json(['message' => 'Submission deleted.']);
+    }
+
+    /**
+     * Let the sender know what became of their map.
+     *
+     * Quietly does nothing when they gave no email: the address is
+     * optional, and the admin screen flags those so somebody rings them
+     * instead.
+     */
+    private function tellSender(SocietyMapSubmission $submission, ?string $mapSlug): void
+    {
+        if (! $submission->contact_email) {
+            return;
+        }
+
+        $notification = new SocietyMapSubmissionReviewedNotification($submission, $mapSlug);
+
+        /* Through the user's own account where there is one, so it also
+           reaches their notifications on the site. */
+        if ($submission->user) {
+            $submission->user->notify($notification);
+
+            return;
+        }
+
+        Notification::route('mail', $submission->contact_email)->notify($notification);
     }
 
     /**
@@ -193,6 +229,8 @@ class SocietyMapSubmissionController extends Controller
             'status' => $s->status->value,
             'statusLabel' => $s->status->label(),
             'reviewNote' => $s->review_note,
+            /* No address means somebody has to ring them instead. */
+            'canEmail' => $s->contact_email !== null,
             'mapSlug' => $s->map?->slug,
             'submittedAt' => $s->created_at?->toDateTimeString(),
         ];
