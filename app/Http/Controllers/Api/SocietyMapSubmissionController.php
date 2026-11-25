@@ -45,6 +45,16 @@ class SocietyMapSubmissionController extends Controller
             )
             : null;
 
+        /* Resized, unlike the map: a face on an admin screen needs no
+           more than this, and the original would sit on disk forever. */
+        $photo = $request->hasFile('photoFile')
+            ? $this->images->upload(
+                $request->file('photoFile'),
+                'society-map-submissions',
+                400,
+            )
+            : null;
+
         $submission = SocietyMapSubmission::create([
             'society_name' => $data['societyName'],
             'city_name' => $data['cityName'] ?? null,
@@ -54,6 +64,7 @@ class SocietyMapSubmissionController extends Controller
             'contact_phone' => $data['contactPhone'],
             'contact_email' => $data['contactEmail'] ?? null,
             'contact_role' => $data['contactRole'] ?? null,
+            'contact_photo' => $photo,
             'user_id' => $request->user()?->id,
             'notes' => $data['notes'] ?? '',
             'image' => $image,

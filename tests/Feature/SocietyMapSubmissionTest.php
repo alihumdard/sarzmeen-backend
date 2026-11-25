@@ -294,6 +294,32 @@ class SocietyMapSubmissionTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_a_photo_is_optional_and_reaches_the_reviewer(): void
+    {
+        Storage::fake('public');
+
+        /* Without one, nothing breaks. */
+        $this->postJson('/api/society-map-submissions', $this->payload())
+            ->assertCreated();
+
+        $this->assertNull(SocietyMapSubmission::firstOrFail()->contact_photo);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/society-map-submissions')
+            ->assertOk()
+            ->assertJsonPath('data.0.contact.photo', null);
+
+        /* With one, the administrator sees it. */
+        $this->postJson('/api/society-map-submissions', $this->payload([
+            'societyName' => 'Second Scheme',
+            'photoFile' => UploadedFile::fake()->image('me.jpg', 800, 800),
+        ]))->assertCreated();
+
+        $withPhoto = SocietyMapSubmission::where('society_name', 'Second Scheme')->firstOrFail();
+        $this->assertNotNull($withPhoto->contact_photo);
+        Storage::disk('public')->assertExists($withPhoto->contact_photo);
+    }
+
     public function test_a_visitor_cannot_review_submissions(): void
     {
         $this->getJson('/api/admin/society-map-submissions')->assertUnauthorized();

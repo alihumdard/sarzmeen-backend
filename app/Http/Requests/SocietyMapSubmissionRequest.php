@@ -38,6 +38,10 @@ class SocietyMapSubmissionRequest extends FormRequest
 
             'notes' => ['nullable', 'string', 'max:2000'],
 
+            /* Optional, and small: it only has to be recognisable on an
+               admin screen, not zoomed into. */
+            'photoFile' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+
             /* 12MB is what PHP accepts here (upload_max_filesize); asking
                for more would fail in the server before this rule ran. */
             'imageFile' => [
@@ -58,6 +62,7 @@ class SocietyMapSubmissionRequest extends FormRequest
             'imageFile.required' => 'Please attach the map image.',
             'imageFile.max' => 'The map image may be up to 12MB.',
             'documentFile.max' => 'The PDF may be up to 12MB.',
+            'photoFile.max' => 'Your photo may be up to 4MB.',
         ];
     }
 }

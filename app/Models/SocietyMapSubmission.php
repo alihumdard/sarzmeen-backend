@@ -23,6 +23,7 @@ class SocietyMapSubmission extends Model
         'contact_phone',
         'contact_email',
         'contact_role',
+        'contact_photo',
         'user_id',
         'notes',
         'image',

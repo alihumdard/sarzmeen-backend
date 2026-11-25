@@ -149,6 +149,10 @@ class SocietyMapSubmissionController extends Controller
             $this->images->delete($submission->document);
         }
 
+        if ($submission->contact_photo) {
+            $this->images->delete($submission->contact_photo);
+        }
+
         $submission->delete();
 
         return response()->json(['message' => 'Submission deleted.']);
@@ -181,6 +185,7 @@ class SocietyMapSubmissionController extends Controller
                 'phone' => $s->contact_phone,
                 'email' => $s->contact_email,
                 'role' => $s->contact_role,
+                'photo' => $s->contact_photo ? $this->images->url($s->contact_photo) : null,
             ],
             'notes' => $s->notes,
             'image' => $this->images->url($s->image),
