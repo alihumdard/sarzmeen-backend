@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\PropertySchemaController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\BlogController;
 use App\Http\Controllers\Api\SocietyMapController;
+use App\Http\Controllers\Api\SocietyMapSubmissionController;
 use App\Http\Controllers\Api\VideoController as PublicVideoController;
 use App\Http\Controllers\Api\InquiryController;
 use App\Http\Controllers\Api\SearchController;
@@ -62,6 +63,7 @@ use App\Http\Controllers\Api\Admin\ProjectDocumentController as AdminProjectDocu
 use App\Http\Controllers\Api\Admin\DeveloperController as AdminDeveloperController;
 use App\Http\Controllers\Api\Admin\BlogController as AdminBlogController;
 use App\Http\Controllers\Api\Admin\SocietyMapController as AdminSocietyMapController;
+use App\Http\Controllers\Api\Admin\SocietyMapSubmissionController as AdminSocietyMapSubmissionController;
 use App\Http\Controllers\Api\Admin\VideoCategoryController as AdminVideoCategoryController;
 use App\Http\Controllers\Api\Admin\VideoController as AdminVideoController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController as AdminBlogCategoryController;
@@ -102,6 +104,11 @@ Route::get('/society-maps/popular', [SocietyMapController::class, 'popular']);
 Route::get('/society-maps', [SocietyMapController::class, 'index']);
 Route::get('/society-maps/{slug}', [SocietyMapController::class, 'show']);
 Route::post('/society-maps/{slug}/download', [SocietyMapController::class, 'download']);
+
+/* A society owner offering their own map. Open to the public, so it
+   carries its own, tighter limit. */
+Route::post('/society-map-submissions', [SocietyMapSubmissionController::class, 'store'])
+    ->middleware('throttle:submissions');
 Route::get('/blog-categories', [BlogController::class, 'categories']);
 Route::get('/blog-tags', [BlogController::class, 'tags']);
 
@@ -379,6 +386,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('society-maps', AdminSocietyMapController::class)
             ->parameters(['society-maps' => 'society_map'])
             ->middleware('permission:society_maps.manage');
+
+        Route::middleware('permission:society_maps.manage')->group(function () {
+            Route::get('/society-map-submissions', [AdminSocietyMapSubmissionController::class, 'index']);
+            Route::post('/society-map-submissions/{submission}/approve', [AdminSocietyMapSubmissionController::class, 'approve']);
+            Route::post('/society-map-submissions/{submission}/reject', [AdminSocietyMapSubmissionController::class, 'reject']);
+            Route::delete('/society-map-submissions/{submission}', [AdminSocietyMapSubmissionController::class, 'destroy']);
+        });
 
         // Videos are content, so they sit with the blog permission.
         /* Review, before an owner's video reaches their page. */

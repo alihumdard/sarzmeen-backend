@@ -83,5 +83,17 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('uploads', function (Request $request) {
             return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
+
+        /*
+         * Anyone may offer a society map, so this one is open to the
+         * public and carries file uploads. Tight on purpose: a genuine
+         * sender submits one map, thinks, and perhaps sends another.
+         */
+        RateLimiter::for('submissions', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by($request->ip()),
+                Limit::perDay(10)->by($request->ip()),
+            ];
+        });
     }
 }
